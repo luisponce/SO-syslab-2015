@@ -2,7 +2,8 @@
 Practica para Sistemas Operativos (20152)
 
 # Modelo de memoria
-Espacio Reservado 
+Espacio Reservado en memoria compartida:
+
 1. Mutex De Memoria Compartida
 
 
