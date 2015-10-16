@@ -1,1 +1,0 @@
-![IMG_0642.JPG](https://bitbucket.org/repo/x5Eyxg/images/2131410098-IMG_0642.JPG)
