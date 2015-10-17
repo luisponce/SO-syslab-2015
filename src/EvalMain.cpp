@@ -120,7 +120,7 @@ void Register(int argc, string argv[]){
 	void *startSem = GetMem(0, sizeof(sem_t));
 	sem_t *mutexMem = (sem_t *) startSem;
 	cout<<"waiting mutex"<<endl;
-	sem_wait(mutexMem);
+	while(sem_tywait(mutexMem)!=0);
 	cout<<"IN mutex, press any key to exit"<<endl;
 	char d;
 	cin>>d;
