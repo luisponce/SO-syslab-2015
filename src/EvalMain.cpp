@@ -32,15 +32,26 @@ string memName = "evaluator";
 */
 void MapArg(string mode, int value){
 	if(mode == "-i"){
-		cout<<"colas input: "<<value;
+		cout << "Colas input: " << value << endl;
 	} else if(mode == "-ie"){
-		cout<<"Capacidad input: "<<value;
+		cout << "Capacidad input: " << value << endl;
+	} else if(mode == "-oe"){
+		cout << "Capacidad output: " << value << endl;
+	} else if(mode == "-b"){
+		cout << "Reactivos sangre: " << value << endl;
+	} else if(mode == "-d"){
+		cout << "Reactivos detritos: " << value << endl;
+	} else if(mode == "-s"){
+		cout << "Reactivos piel: " << value << endl;
+	} else {
+		cout << "Error: Invalid Argument" << endl;
+		return;
 	}
 }
 
 int CalculateMemMaxSize(){
 	int size = 0;
- 	//Mutex De Memoria Compartida 
+ 	//Mutex De Memoria Compartida
 	size += 1 * sizeof(sem_t);
 
 	return size;
@@ -50,7 +61,7 @@ void CreateSharedMem(){
 	//crear memoria
 	int shmfd;
 	const char * memRegName = memName.c_str();
-  	shmfd = shm_open("evaluator", O_RDWR | O_CREAT | O_EXCL | O_TRUNC, 
+  	shmfd = shm_open("evaluator", O_RDWR | O_CREAT | O_EXCL | O_TRUNC,
   		0660);
 
   	if (shmfd < 0) {
@@ -79,7 +90,7 @@ void* GetMem(int offset, int len){
 	}
 
 	void* startshm;
-  	if ((startshm = mmap(NULL, len, PROT_READ | PROT_WRITE, 
+  	if ((startshm = mmap(NULL, len, PROT_READ | PROT_WRITE,
   		MAP_SHARED, shmfd, 0)) == MAP_FAILED) {
 		perror("mmap");
 	    exit(1);
@@ -145,8 +156,8 @@ void Report(int argc, string argv[]){
 	return;
 }
 
-/* 	
-/	dado un comando llama el metodo apropiado pasando 
+/*
+/	dado un comando llama el metodo apropiado pasando
 /	el resto de argumentos MENOS el argumento que este
 /	parser ya proceso.
 /	ej: $ evaluator init -i 3
@@ -183,7 +194,7 @@ void CommandParser(int argc, char const *argv[]){
 		} else if(cmd == "rep"){
 			Report(argc, args);
 			return;
-		} 
+		}
 	}
 
 	cout<<"Error: Invalid Command"<<endl;
@@ -196,4 +207,3 @@ int main(int argc, char const *argv[])
 
 	return 0;
 }
-
