@@ -3,6 +3,11 @@
 /
 /
 */
+
+// -----PENDIENTES ---------------------------
+//Crear metodo que valida cadena de caracteres
+//Crear metodo que valide cadena de numeros
+
 #include <sys/mman.h>
 #include <fcntl.h>           /* For O_* constants */
 #include <sys/stat.h>        /* For mode constants */
@@ -26,6 +31,7 @@ string memName = "evaluator";
 /	-b 		Reactivos sangre
 /	-d 		Reactivos detritos
 /	-s 		Reactivos piel
+/ -q		Capacidad colas internas
 /
 /	NOTA: No procesa el argumento -n, este debe ser procesado
 / 	antes...
@@ -43,8 +49,10 @@ void MapArg(string mode, int value){
 		cout << "Reactivos detritos: " << value << endl;
 	} else if(mode == "-s"){
 		cout << "Reactivos piel: " << value << endl;
+	} else if(mode == "-q"){
+		cout << "Capacidad colas internas: " << value << endl;
 	} else {
-		cout << "Error: Invalid Argument" << endl;
+		cout << "Usage: Invalid Argument" << endl;
 		return;
 	}
 }
@@ -104,14 +112,19 @@ void Initialize(int argc, string argv[]){
 
 	//mapear argumentos
 	int curArg = 0;
-	while(curArg+1 < argc){
-		if(argv[curArg] == "-n"){
-			memName = argv[curArg+1];
-		} else {
-			MapArg(argv[curArg], stoi(argv[curArg+1]));
-		}
+	if((argc % 2) == 0) {
+		while(curArg+1 < argc){
+			if(argv[curArg] == "-n"){
+				memName = argv[curArg+1];
+			} else {
+				MapArg(argv[curArg], stoi(argv[curArg+1]));
+			}
 
-		curArg += 2;
+			curArg += 2;
+		}
+	} else {
+		cout << "Usage: Invalid Argument" << endl;
+		return;
 	}
 
 	CreateSharedMem();
@@ -122,6 +135,42 @@ void Initialize(int argc, string argv[]){
 	sem_init(mutexMem, 0, 1);
 
 	delete [] argv;
+	return;
+}
+
+void MapArgControl(string mode){
+	if(mode == "list"){
+		cout << "List of all system: " << mode << endl;
+	} else if(mode == "list waiting"){
+		cout << "list of waiting elements: " << mode << endl;
+	} else if(mode == "list processing"){
+		cout << "List of processing elements: " << mode << endl;
+	} else if(mode == "list reported"){
+		cout << "List of reported elements: " << mode << endl;
+	} else if(mode == "list reactive"){
+		cout << "List of reactive: " << mode << endl;
+	} else if(mode == "list all"){
+		cout << "List of all system: " << mode << endl;
+	} else if(mode.substr(0,9) == "update B "){
+		cout << "Updating B reactives: " << mode.substr(0,9) << "with "
+			<< mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
+	} else if(mode.substr(0,9) == "update S "){
+		cout << "Updating S reactives: " << mode.substr(0,9) << "with "
+			<< mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
+	} else if(mode.substr(0,9) == "update D "){
+		cout << "Updating D reactives: " << mode.substr(0,9) << "with "
+			<< mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
+	} else {
+		cout << "Usage: Invalid Argument" << endl;
+		return;
+	}
+}
+
+void SubControl() {
+	string arg = "";
+	while (!getline (cin,arg).eof()) {
+    MapArgControl(arg);
+	}
 	return;
 }
 
@@ -145,7 +194,26 @@ void Register(int argc, string argv[]){
 void Control(int argc, string argv[]){
 	cout << "control" << endl;
 
+	//mapear argumentos
+	int curArg = 0;
+	if(argc == 0) {
+		cout << "Nombre seccion compartida: " << "Por default" << endl;
+		SubControl();
+	} else if(argc == 2){
+		if(argv[curArg] == "-s"){
+			cout << "Nombre seccion compartida: " << argv[curArg+1] << endl;
+			SubControl();
+		} else {
+			cout << "Usage: Invalid Argument" << endl;
+			return;
+		}
+	} else {
+		cout << "Usage: Invalid Argument" << endl;
+		return;
+	}
+
 	delete [] argv;
+	//SubControl();
 	return;
 }
 
