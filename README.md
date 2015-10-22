@@ -7,12 +7,10 @@ Espacio Reservado en memoria compartida:
 Memoria "Estatica" (S)
 
 1. Mutex De "Memoiria estatica"
-
 1. Numero Entradas (-i)
 2. Posiciones Entradas (-ie)
 3. Posiciones Internas (-q)
 4. Posiciones Salida (-oe)
-
 2. Reactivo S 
 3. Reactivo B
 4. Reactivo D
