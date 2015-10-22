@@ -23,7 +23,7 @@ using namespace std;
 
 string memName = "evaluator";
 
-map<string, int> initArgs;
+map<char, int> initArgs;
 
 /*
 /	mapea un par de argumentos, dado un modo y su valor(int)
@@ -41,7 +41,7 @@ map<string, int> initArgs;
 */
 void MapArg(string mode, int value){
   if(mode == "-i"){
-    // initValues["-i"] = value;
+    // initValues["i"] = value;
     cout << "Colas input: " << value << endl;
   } else if(mode == "-ie"){
     cout << "Capacidad input: " << value << endl;
@@ -130,13 +130,13 @@ void SetInitialValues(){
 }
 
 void SetDefaultValues(){
-  initArgs.insert(pair<string, int>("-i", 5)); 
-  initArgs.insert(pair<string, int>("-ie", 6));
-  initArgs.insert(pair<string, int>("-oe", 10));
-  initArgs.insert(pair<string, int>("-b", 100));
-  initArgs.insert(pair<string, int>("-d", 100));
-  initArgs.insert(pair<string, int>("-s", 100));
-  initArgs.insert(pair<string, int>("-q"), 10);
+  initArgs.insert(pair<char, int>('i', 5)); //-i
+  initArgs.insert(pair<char, int>('I', 6));//-ie
+  initArgs.insert(pair<char, int>('O', 10));//-oe
+  initArgs.insert(pair<char, int>('b', 100));
+  initArgs.insert(pair<char, int>('d', 100));
+  initArgs.insert(pair<char, int>('s', 100));
+  initArgs.insert(pair<char, int>('q', 10));
 }
 
 void Initialize(int argc, string argv[]){
