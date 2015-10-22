@@ -7,6 +7,11 @@ Espacio Reservado en memoria compartida:
 Memoria "Estatica" (S)
 
 1. Mutex De "Memoiria estatica"
+2. Reactivo S
+3. Reactivo B
+4. Reactivo D
+
+1. Refs Memoria "Dinamica" ....
 
 
 Memoria "Dinamica" (D)
