@@ -17,10 +17,13 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <semaphore.h>
+#include <map>
 
 using namespace std;
 
 string memName = "evaluator";
+
+map<string, int> initArgs;
 
 /*
 /	mapea un par de argumentos, dado un modo y su valor(int)
@@ -38,6 +41,7 @@ string memName = "evaluator";
 */
 void MapArg(string mode, int value){
   if(mode == "-i"){
+    // initValues["-i"] = value;
     cout << "Colas input: " << value << endl;
   } else if(mode == "-ie"){
     cout << "Capacidad input: " << value << endl;
@@ -116,6 +120,25 @@ void* GetMem(int offset, int len){
 	return startshm;
 }
 
+void SetInitialValues(){
+  void *startSem = GetMem(0, sizeof(sem_t));
+  sem_t *mutexMem = (sem_t *) startSem;
+  sem_init(mutexMem, 0, 1);
+  
+  
+
+}
+
+void SetDefaultValues(){
+  initArgs.insert(pair<string, int>("-i", 5)); 
+  initArgs.insert(pair<string, int>("-ie", 6));
+  initArgs.insert(pair<string, int>("-oe", 10));
+  initArgs.insert(pair<string, int>("-b", 100));
+  initArgs.insert(pair<string, int>("-d", 100));
+  initArgs.insert(pair<string, int>("-s", 100));
+  initArgs.insert(pair<string, int>("-q"), 10);
+}
+
 void Initialize(int argc, string argv[]){
   cout<<"initialize "<<endl;
 	
@@ -134,13 +157,11 @@ void Initialize(int argc, string argv[]){
     cout << "Usage: Invalid Argument" << endl;
     return;
   }
-  
+  SetDefaultValues();
+
   CreateSharedMem();
   
-  //initial values
-  void *startSem = GetMem(0, sizeof(sem_t));
-  sem_t *mutexMem = (sem_t *) startSem;
-  sem_init(mutexMem, 0, 1);
+  SetInitialValues();
   
   delete [] argv;
   return;
