@@ -26,41 +26,46 @@ string memName = "evaluator";
 /	mapea un par de argumentos, dado un modo y su valor(int)
 / 	Modos:
 /	-i 		Colas de input
-/	-ie 	Capacidad cola input
-/	-oe 	Capacidad cola output
+/	-ie     	Capacidad cola input
+/	-oe     	Capacidad cola output
 /	-b 		Reactivos sangre
 /	-d 		Reactivos detritos
 /	-s 		Reactivos piel
-/ -q		Capacidad colas internas
+/       -q		Capacidad colas internas
 /
 /	NOTA: No procesa el argumento -n, este debe ser procesado
 / 	antes...
 */
 void MapArg(string mode, int value){
-	if(mode == "-i"){
-		cout << "Colas input: " << value << endl;
-	} else if(mode == "-ie"){
-		cout << "Capacidad input: " << value << endl;
-	} else if(mode == "-oe"){
-		cout << "Capacidad output: " << value << endl;
-	} else if(mode == "-b"){
-		cout << "Reactivos sangre: " << value << endl;
-	} else if(mode == "-d"){
-		cout << "Reactivos detritos: " << value << endl;
-	} else if(mode == "-s"){
-		cout << "Reactivos piel: " << value << endl;
-	} else if(mode == "-q"){
-		cout << "Capacidad colas internas: " << value << endl;
-	} else {
-		cout << "Usage: Invalid Argument" << endl;
-		return;
-	}
+  if(mode == "-i"){
+    cout << "Colas input: " << value << endl;
+  } else if(mode == "-ie"){
+    cout << "Capacidad input: " << value << endl;
+  } else if(mode == "-oe"){
+    cout << "Capacidad output: " << value << endl;
+  } else if(mode == "-b"){
+    cout << "Reactivos sangre: " << value << endl;
+  } else if(mode == "-d"){
+    cout << "Reactivos detritos: " << value << endl;
+  } else if(mode == "-s"){
+    cout << "Reactivos piel: " << value << endl;
+  } else if(mode == "-q"){
+    cout << "Capacidad colas internas: " << value << endl;
+  } else {
+    cout << "Usage: Invalid Argument" << endl;
+    return;
+  }
 }
 
 int CalculateMemMaxSize(){
 	int size = 0;
- 	//Mutex De Memoria Compartida
-	size += 1 * sizeof(sem_t);
+ 	//Memoria "estatica"
+	size += 1 * sizeof(sem_t); //mutex memoria estatica
+	size += 4 * sizeof(int); //informacion de las colas
+	size += 3 * sizeof(int); //reactivos
+	size += 12 * sizeof(int); //refs memoria dinamica
+	//Memoria "Dinamica"
+	
 
 	return size;
 }
@@ -88,6 +93,10 @@ void CreateSharedMem(){
   	close(shmfd);
 }
 
+/*
+/  Obtiene un puntero a la posicion de la memoria compartida
+/  indicadas entre los bytes offset y len
+*/
 void* GetMem(int offset, int len){
 	int shmfd;
   	shmfd = shm_open("evaluator", O_RDWR , 0660);
@@ -108,62 +117,61 @@ void* GetMem(int offset, int len){
 }
 
 void Initialize(int argc, string argv[]){
-	cout<<"initialize "<<endl;
-
-	//mapear argumentos
-	int curArg = 0;
-	if((argc % 2) == 0) {
-		while(curArg+1 < argc){
-			if(argv[curArg] == "-n"){
-				memName = argv[curArg+1];
-			} else {
-				MapArg(argv[curArg], stoi(argv[curArg+1]));
-			}
-
-			curArg += 2;
-		}
-	} else {
-		cout << "Usage: Invalid Argument" << endl;
-		return;
-	}
-
-	CreateSharedMem();
-
-	//initial values
-	void *startSem = GetMem(0, sizeof(sem_t));
-	sem_t *mutexMem = (sem_t *) startSem;
-	sem_init(mutexMem, 0, 1);
-
-	delete [] argv;
-	return;
+  cout<<"initialize "<<endl;
+	
+  //mapear argumentos
+  int curArg = 0;
+  if((argc % 2) == 0) {
+    while(curArg+1 < argc){
+      if(argv[curArg] == "-n"){
+	memName = argv[curArg+1];
+      } else {
+	MapArg(argv[curArg], stoi(argv[curArg+1]));
+      }
+      curArg += 2;
+    }
+  } else {
+    cout << "Usage: Invalid Argument" << endl;
+    return;
+  }
+  
+  CreateSharedMem();
+  
+  //initial values
+  void *startSem = GetMem(0, sizeof(sem_t));
+  sem_t *mutexMem = (sem_t *) startSem;
+  sem_init(mutexMem, 0, 1);
+  
+  delete [] argv;
+  return;
 }
 
 void MapArgControl(string mode){
-	if(mode == "list"){
-		cout << "List of all system: " << mode << endl;
-	} else if(mode == "list waiting"){
-		cout << "list of waiting elements: " << mode << endl;
-	} else if(mode == "list processing"){
-		cout << "List of processing elements: " << mode << endl;
-	} else if(mode == "list reported"){
-		cout << "List of reported elements: " << mode << endl;
-	} else if(mode == "list reactive"){
-		cout << "List of reactive: " << mode << endl;
-	} else if(mode == "list all"){
-		cout << "List of all system: " << mode << endl;
-	} else if(mode.substr(0,9) == "update B "){
-		cout << "Updating B reactives: " << mode.substr(0,9) << "with "
-			<< mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
-	} else if(mode.substr(0,9) == "update S "){
-		cout << "Updating S reactives: " << mode.substr(0,9) << "with "
-			<< mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
-	} else if(mode.substr(0,9) == "update D "){
-		cout << "Updating D reactives: " << mode.substr(0,9) << "with "
-			<< mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
-	} else {
-		cout << "Usage: Invalid Argument" << endl;
-		return;
-	}
+  if(mode == "list"){
+    cout << "List of all system: " << mode << endl;
+  } else if(mode == "list waiting"){
+	  cout << "list of waiting elements: " << mode << endl;
+  } else if(mode == "list processing"){
+    cout << "List of processing elements: " << mode << endl;
+  } else if(mode == "list reported"){
+    cout << "List of reported elements: " << mode << endl;
+  } else if(mode == "list reactive"){
+    cout << "List of reactive: " << mode << endl;
+  } else if(mode == "list all"){
+    cout << "List of all system: " << mode << endl;
+  } else if(mode.substr(0,9) == "update B "){
+    cout << "Updating B reactives: " << mode.substr(0,9) << "with "
+	 << mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
+  } else if(mode.substr(0,9) == "update S "){
+    cout << "Updating S reactives: " << mode.substr(0,9) << "with "
+	 << mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
+  } else if(mode.substr(0,9) == "update D "){
+    cout << "Updating D reactives: " << mode.substr(0,9) << "with "
+	 << mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
+  } else {
+    cout << "Usage: Invalid Argument" << endl;
+    return;
+  }
 }
 
 void SubControl() {
