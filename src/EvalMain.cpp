@@ -217,8 +217,43 @@ void Control(int argc, string argv[]){
 	return;
 }
 
+void MapArgRep(string mode, int value){
+	if(mode == "-i"){
+		cout << "Modo interactivo: " << value << endl;
+	} else if(mode == "-m"){
+		cout << "Numero determinado examenes: " << value << endl;
+	} else {
+		cout << "Usage: Invalid Argument" << endl;
+		return;
+	}
+}
+
 void Report(int argc, string argv[]){
 	cout << "report" << endl;
+
+	//mapear argumentos
+	int curArg = 0;
+	if(argc == 0) {
+		cout << "Usage: Invalid Argument" << endl;
+		return;
+	}
+	if((argc % 2) == 0) {
+		while(curArg+1 < argc){
+			if(argv[curArg] == "-s"){
+				if(argc == 2) {
+					cout << "Usage: Invalid Argument" << endl;
+					return;
+				}
+				cout << "Nombre seccion compartida: " << argv[curArg+1] << endl;
+			} else {
+				MapArgRep(argv[curArg], stoi(argv[curArg+1]));
+			}
+			curArg += 2;
+		}
+	} else {
+		cout << "Usage: Invalid Argument" << endl;
+		return;
+	}
 
 	delete [] argv;
 	return;
