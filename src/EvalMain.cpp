@@ -132,7 +132,7 @@ void* GetMem(int offset, int len){
 }
 
 /*
-/ Obtiene un puntero de la memoria compartida
+/ Obtiene una copia de la memoria compartida
 / 
 / i    Valor
 / ------------   
