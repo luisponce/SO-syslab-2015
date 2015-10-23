@@ -166,7 +166,7 @@ void SetInitialValues(){
 
   sem_t *mutexMem = (sem_t *) GetMem(off, sizeof(sem_t));
   off += sizeof(sem_t);
-  sem_init(mutexMem, 0, 1);
+  sem_init(mutexMem, 1, 1);
   
   int *numEntradas = (int *) GetMem(off, sizeof(int));
   off += sizeof(int);
@@ -246,7 +246,7 @@ void MapArgControl(string mode){
 void SubControl() {
 	string arg = "";
 	while (!getline (cin,arg).eof()) {
-    MapArgControl(arg);
+	  MapArgControl(arg);
 	}
 	return;
 }
@@ -257,7 +257,7 @@ void Register(int argc, string argv[]){
 	void *startSem = GetMem(0, sizeof(sem_t));
 	sem_t *mutexMem = (sem_t *) startSem;
 	cout<<"waiting mutex"<<endl;
-	while(sem_trywait(mutexMem)!=0);
+	sem_wait(mutexMem);
 	cout<<"IN mutex, press any key to exit"<<endl;
 	char d;
 	cin>>d;
