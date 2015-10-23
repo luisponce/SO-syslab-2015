@@ -89,7 +89,7 @@ void CreateSharedMem(){
 	//crear memoria
 	int shmfd;
 	const char * memRegName = memName.c_str();
-  	shmfd = shm_open("evaluator", O_RDWR | O_CREAT | O_EXCL | O_TRUNC,
+  	shmfd = shm_open(memRegName, O_RDWR | O_CREAT | O_TRUNC,
   		0660);
 
   	if (shmfd < 0) {
@@ -114,7 +114,7 @@ void CreateSharedMem(){
 */
 void* GetMem(int offset, int len){
 	int shmfd;
-  	shmfd = shm_open("evaluator", O_RDWR , 0660);
+  	shmfd = shm_open(memName.c_str(), O_RDWR , 0660);
 
   	if (shmfd < 0) {
 	    perror("shm_open");
@@ -131,12 +131,46 @@ void* GetMem(int offset, int len){
 	return startshm;
 }
 
+/*
+/ Obtiene un puntero de la memoria compartida
+/ 
+/ i    Valor
+/ ------------   
+/ 1    -i
+/ 2    -ie
+/ 3    -q
+/ 4    -oe
+/ 5    React s
+/ 6    React B
+/ 7    React D
+/ 9-12 Refs a MemD
+/ 
+*/
+int GetIntFromMemS(int i){
+  sem_t *mutex = (sem_t*) GetMem(0, sizeof(sem_t));
+  while(sem_trywait(mutex) != 0);
+
+  int offset = sizeof(sem_t);
+  offset += sizeof(int)*i;
+  int* val = (int *) GetMem(offset, sizeof(int));
+  int res = *val;
+
+  sem_post(mutex);
+  
+  return res;
+
+}
+
 void SetInitialValues(){
-  void *startSem = GetMem(0, sizeof(sem_t));
-  sem_t *mutexMem = (sem_t *) startSem;
+  int off = 0;
+
+  sem_t *mutexMem = (sem_t *) GetMem(off, sizeof(sem_t));
+  off += sizeof(sem_t);
   sem_init(mutexMem, 0, 1);
   
-  
+  int *numEntradas = (int *) GetMem(off, sizeof(int));
+  off += sizeof(int);
+  *numEntradas = initArgs['i'];
 
 }
 
@@ -175,6 +209,7 @@ void Initialize(int argc, string argv[]){
   
   SetInitialValues();
   
+  cout<< "-i from memS: " << GetIntFromMemS(0) << endl;
   
   delete [] argv;
   return;
