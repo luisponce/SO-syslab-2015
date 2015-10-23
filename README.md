@@ -11,9 +11,6 @@ Memoria "Estatica" (S)
 2. Posiciones Entradas (-ie)
 3. Posiciones Internas (-q)
 4. Posiciones Salida (-oe)
-2. Mutex Salida
-3. Llenos Salida
-4. Vacios Salida
 2. Reactivo S 
 3. Reactivo B
 4. Reactivo D
@@ -35,6 +32,9 @@ Memoria "Dinamica" (D)
 4. Vacios Internos
 
 1. Buffer Salida
+2. Mutex Salida
+3. Llenos Salida
+4. Vacios Salida
 
 
 
