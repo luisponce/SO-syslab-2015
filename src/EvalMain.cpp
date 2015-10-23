@@ -25,6 +25,16 @@ string memName = "evaluator";
 
 map<char, int> initArgs;
 
+void PrintArgs(){
+  cout << "colas input: " << initArgs['i'] << endl;
+  cout << "Capacidad input: " << initArgs['I'] << endl;
+  cout << "Capacidad output: " << initArgs['O'] << endl;
+  cout << "Reactivos sangre: " << initArgs['b'] << endl;
+  cout << "Reactivos detritos: " << initArgs['d'] << endl;
+  cout << "Reactivos piel: " << initArgs['s'] << endl;
+  cout << "Capacidad colas internas: " << initArgs['q'] << endl;
+}
+
 /*
 /	mapea un par de argumentos, dado un modo y su valor(int)
 / 	Modos:
@@ -41,24 +51,25 @@ map<char, int> initArgs;
 */
 void MapArg(string mode, int value){
   if(mode == "-i"){
-    // initValues["i"] = value;
-    cout << "Colas input: " << value << endl;
+    initArgs['i'] = value;
   } else if(mode == "-ie"){
-    cout << "Capacidad input: " << value << endl;
+    initArgs['I'] = value;
   } else if(mode == "-oe"){
-    cout << "Capacidad output: " << value << endl;
+    initArgs['O'] = value;
   } else if(mode == "-b"){
-    cout << "Reactivos sangre: " << value << endl;
+    initArgs['b'] = value;
   } else if(mode == "-d"){
-    cout << "Reactivos detritos: " << value << endl;
+    initArgs['d'] = value;
   } else if(mode == "-s"){
-    cout << "Reactivos piel: " << value << endl;
+    initArgs['s'] = value;
   } else if(mode == "-q"){
-    cout << "Capacidad colas internas: " << value << endl;
+    initArgs['q'] = value;
   } else {
     cout << "Usage: Invalid Argument" << endl;
     return;
   }
+
+  
 }
 
 int CalculateMemMaxSize(){
@@ -158,10 +169,12 @@ void Initialize(int argc, string argv[]){
     return;
   }
   SetDefaultValues();
-
+  PrintArgs();
+  
   CreateSharedMem();
   
   SetInitialValues();
+  
   
   delete [] argv;
   return;
