@@ -6,7 +6,7 @@ Espacio Reservado en memoria compartida:
 
 Memoria "Estatica" (S)
 
-1. Mutex De "Memoiria estatica"
+1. Mutex De "Memoria estatica"
 1. Numero Entradas (-i)
 2. Posiciones Entradas (-ie)
 3. Posiciones Internas (-q)
