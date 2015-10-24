@@ -123,11 +123,13 @@ void* GetMem(int offset, int len){
 
 	void* startshm;
   	if ((startshm = mmap(NULL, len, PROT_READ | PROT_WRITE,
-  		MAP_SHARED, shmfd, 0)) == MAP_FAILED) {
+			     MAP_SHARED, shmfd, 0)) == MAP_FAILED) {
 		perror("mmap");
 	    exit(1);
 	}
 
+	close(shmfd);
+	startshm += offset;
 	return startshm;
 }
 
@@ -148,15 +150,15 @@ void* GetMem(int offset, int len){
 */
 int GetIntFromMemS(int i){
   sem_t *mutex = (sem_t*) GetMem(0, sizeof(sem_t));
-  while(sem_trywait(mutex) != 0);
-
+  sem_wait(mutex);
   int offset = sizeof(sem_t);
+  
   offset += sizeof(int)*i;
   int* val = (int *) GetMem(offset, sizeof(int));
   int res = *val;
 
   sem_post(mutex);
-  
+
   return res;
 
 }
@@ -171,6 +173,10 @@ void SetInitialValues(){
   int *numEntradas = (int *) GetMem(off, sizeof(int));
   off += sizeof(int);
   *numEntradas = initArgs['i'];
+  
+  int *posEntradas = (int *) GetMem(off, sizeof(int));
+  off += sizeof(int);
+  *posEntradas = initArgs['I'];
 
 }
 
@@ -209,8 +215,9 @@ void Initialize(int argc, string argv[]){
   
   SetInitialValues();
   
-  cout<< "-i from memS: " << GetIntFromMemS(0) << endl;
-  
+  cout<< "-i: "<< initArgs['i'] << " - from memS: " << GetIntFromMemS(0) << endl;
+  cout << "-ie" << initArgs['I'] << " - from memS: " << GetIntFromMemS(1) << endl;
+
   delete [] argv;
   return;
 }
