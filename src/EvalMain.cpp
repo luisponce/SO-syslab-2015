@@ -25,15 +25,16 @@ string memName = "evaluator";
 
 map<char, int> initArgs;
 
-void PrintArgs(){
-  cout << "colas input: " << initArgs['i'] << endl;
-  cout << "Capacidad input: " << initArgs['I'] << endl;
-  cout << "Capacidad output: " << initArgs['O'] << endl;
-  cout << "Reactivos sangre: " << initArgs['b'] << endl;
-  cout << "Reactivos detritos: " << initArgs['d'] << endl;
-  cout << "Reactivos piel: " << initArgs['s'] << endl;
-  cout << "Capacidad colas internas: " << initArgs['q'] << endl;
-}
+struct memS{
+  int i;
+  int ie;
+  int q;
+  int oe;
+  int s;
+  int b;
+  int d;
+  
+};
 
 /*
 /	mapea un par de argumentos, dado un modo y su valor(int)
@@ -133,6 +134,8 @@ void* GetMem(int offset, int len){
 	return startshm;
 }
 
+
+
 /*
 / Obtiene una copia de la memoria compartida
 / 
@@ -148,20 +151,32 @@ void* GetMem(int offset, int len){
 / 9-12 Refs a MemD
 / 
 */
-int GetIntFromMemS(int i){
+memS GetMemS(){
   sem_t *mutex = (sem_t*) GetMem(0, sizeof(sem_t));
   sem_wait(mutex);
-  int offset = sizeof(sem_t);
-  
-  offset += sizeof(int)*i;
-  int* val = (int *) GetMem(offset, sizeof(int));
-  int res = *val;
+
+  memS* val = (memS *) GetMem(sizeof(sem_t), sizeof(memS));
+  memS res = *val;
 
   sem_post(mutex);
 
   return res;
 
 }
+
+void PrintArgs(){
+  
+  memS mem = GetMemS();
+  cout<< "Colas input -i: "<< initArgs['i'] << " - from memS: " << mem.i  << endl;
+  cout<< "Capacidad input -ie: "<< initArgs['I'] << " - from memS: " << mem.ie  << endl;
+  cout<< "Capacidad colas internas -q: "<< initArgs['q'] << " - from memS: " << mem.q  << endl;
+  cout<< "Capacidad output -oe: "<< initArgs['O'] << " - from memS: " << mem.oe  << endl;
+  cout<< "Reactivos sangre -b: "<< initArgs['b'] << " - from memS: " << mem.b  << endl;
+  cout<< "Reactivos detritos -d: "<< initArgs['d'] << " - from memS: " << mem.d  << endl;
+  cout<< "Reactivos piel -s: "<< initArgs['s'] << " - from memS: " << mem.s  << endl;
+
+}
+
 
 void SetInitialValues(){
   int off = 0;
@@ -170,13 +185,16 @@ void SetInitialValues(){
   off += sizeof(sem_t);
   sem_init(mutexMem, 1, 1);
   
-  int *numEntradas = (int *) GetMem(off, sizeof(int));
-  off += sizeof(int);
-  *numEntradas = initArgs['i'];
-  
-  int *posEntradas = (int *) GetMem(off, sizeof(int));
-  off += sizeof(int);
-  *posEntradas = initArgs['I'];
+  memS *shmS = (memS *) GetMem(off, sizeof(memS));
+  off += sizeof(memS);
+  shmS->i = initArgs['i'];
+  shmS->ie = initArgs['I'];
+  shmS->q = initArgs['q'];
+  shmS->oe = initArgs['O'];
+  shmS->s = initArgs['s'];
+  shmS->b = initArgs['b'];
+  shmS->d = initArgs['d'];
+
 
 }
 
@@ -209,14 +227,12 @@ void Initialize(int argc, string argv[]){
     return;
   }
   SetDefaultValues();
-  PrintArgs();
   
   CreateSharedMem();
   
   SetInitialValues();
-  
-  cout<< "-i: "<< initArgs['i'] << " - from memS: " << GetIntFromMemS(0) << endl;
-  cout << "-ie" << initArgs['I'] << " - from memS: " << GetIntFromMemS(1) << endl;
+
+  PrintArgs();
 
   delete [] argv;
   return;
