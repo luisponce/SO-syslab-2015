@@ -25,6 +25,16 @@ string memName = "evaluator";
 
 map<char, int> initArgs;
 
+enum t_examen{B, S, D};
+enum t_resultado{p, n, r}; //r = - (Repetir)
+
+struct examen{
+  int id;
+  t_examen tipo;
+  t_resultado resultado;
+};
+
+
 struct memS{
   int i;
   int ie;
@@ -33,6 +43,9 @@ struct memS{
   int s;
   int b;
   int d;
+
+  int buffsEntrada;
+  
   
 };
 
@@ -76,12 +89,20 @@ void MapArg(string mode, int value){
 int CalculateMemMaxSize(){
 	int size = 0;
  	//Memoria "estatica"
-	size += 1 * sizeof(sem_t); //mutex memoria estatica
-	size += 4 * sizeof(int); //informacion de las colas
-	size += 3 * sizeof(int); //reactivos
-	size += 12 * sizeof(int); //refs memoria dinamica
+	size += sizeof(memS);
 	//Memoria "Dinamica"
-	
+	int in_num = initArgs['i'];
+	int in_size = initArgs['I'];
+	size += (sizeof(examen)*in_size)*in_num;
+	size += sizeof(sem_t)*in_num*3;//mutex, llenos y vacios
+
+	int q = initArgs['q'];
+	size += sizeof(examen)*q*3;
+	size += sizeof(sem_t)*3*3;//3 tipos de semaforos, 3 buffers
+
+	int out = initArgs['O'];
+	size += sizeof(examen) * out;
+	size += sizeof(sem_t)*3;
 
 	return size;
 }
