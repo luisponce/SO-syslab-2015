@@ -48,6 +48,16 @@ struct memS{
   int mutexEntrada;
   int llenosEntrada;
   int vaciosEntrada;
+  
+  int buffsInternos;
+  int mutexInternos;
+  int llenosInternos;
+  int vaciosInternos;
+
+  int buffSalida;
+  int MutexSalida;
+  int llenosSalida;
+  int vaciosSalida;
 };
 
 /*
@@ -250,6 +260,33 @@ void SetInitialValues(){
   shmS->vaciosEntrada = off;
   InitSemArray(&off, in_size, in_num);
   
+  //internas
+  //buffers internos
+  shmS->buffsInternos = off;
+  off += sizeof(examen) * q * 3;
+  //mutex internos
+  shmS->mutexInternos = off;
+  InitSemArray(&off, 1, 3);
+  //Llenos Internos
+  shmS->llenosInternos = off;
+  InitSemArray(&off, 0, 3);
+  //vacios Internos
+  shmS->vaciosInternos = off;
+  InitSemArray(&off, q, 3);
+
+  //salida
+  //buffer salida
+  shmS->buffsSalida = off;
+  off += sizeof(examen) * out;
+  //mutex salida
+  shmS->mutexSalida = off;
+  InitSemArray(&off, 1, 1);
+  //llenos salida
+  shmS->llenosSalida = off;
+  InitSemArray(&off, 0, 1);
+  //vacios salida
+  shmS->vaciosSalida = off;
+  InitSemArray(&off, out, 1);
 }
 
 void SetDefaultValues(){
