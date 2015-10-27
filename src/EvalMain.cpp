@@ -54,8 +54,8 @@ struct memS{
   int llenosInternos;
   int vaciosInternos;
 
-  int buffSalida;
-  int MutexSalida;
+  int buffsSalida;
+  int mutexSalida;
   int llenosSalida;
   int vaciosSalida;
 };
