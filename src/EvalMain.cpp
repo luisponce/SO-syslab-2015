@@ -18,6 +18,8 @@
 #include <sys/types.h>
 #include <semaphore.h>
 #include <map>
+#include <fstream>
+#include <ostream>
 
 using namespace std;
 
@@ -365,8 +367,43 @@ void SubControl() {
 	return;
 }
 
+void ProcesInput(istream& fs, ostream& out = cout){
+  int tray, quantity;
+  char type;
+  
+  //TODO: proces multiple input lines
+  if(fs>>tray && fs>>type && fs>>quantity){
+    out<<"tray: "<<tray<<" type: "<<type<<" quantity: "<<quantity<<endl;
+  }
+}
+
 void Register(int argc, string argv[]){
 	cout << "register" <<endl;
+	
+	int curArg = 0;
+	if(argc > 2 && argv[curArg] == "-n"){
+	  //TODO: si argv no es string -> error
+	  memName = argv[curArg+1];
+	  curArg += 2; 
+	}
+
+	if(argc-curArg == 1 && argv[curArg]=="-"){
+	  //modo interactivo
+	  cout<<">";
+	  ProcesInput(cin);
+	} else {
+	  //leer de archivo
+	  while(argc > curArg){
+	    string fileName = argv[curArg];
+	    fstream file;
+	    file.open(fileName);
+	    ProcesInput(file);
+	    file.close();
+	    curArg++;
+	  }
+	}
+
+	return;
 
 	memS mems = GetMemS();
 	int off = mems.vaciosEntrada;
