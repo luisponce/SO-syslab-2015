@@ -46,7 +46,8 @@ struct memS{
 
   int buffsEntrada;
   int mutexEntrada;
-  
+  int llenosEntrada;
+  int vaciosEntrada;
 };
 
 /*
@@ -243,8 +244,11 @@ void SetInitialValues(){
   shmS->mutexEntrada = off;
   InitSemArray(&off, 1, in_num);
   //Llenos Entradas
+  shmS->llenosEntrada = off;
+  InitSemArray(&off, 0, in_num);
+  //vacios Entradas
+  shmS->vaciosEntrada = off;
   InitSemArray(&off, in_size, in_num);
-
   
 }
 
@@ -327,7 +331,8 @@ void SubControl() {
 void Register(int argc, string argv[]){
 	cout << "register" <<endl;
 
-	int off = GetMemS().mutexEntrada;
+	memS mems = GetMemS();
+	int off = mems.vaciosEntrada;
 	sem_t *mutexMem = (sem_t *) GetMem(off, sizeof(sem_t));
 
 	cout<<"waiting mutex"<<endl;
