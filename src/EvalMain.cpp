@@ -45,7 +45,7 @@ struct memS{
   int d;
 
   int buffsEntrada;
-  
+  int mutexEntrada;
   
 };
 
@@ -94,11 +94,11 @@ int CalculateMemMaxSize(){
 	int in_num = initArgs['i'];
 	int in_size = initArgs['I'];
 	size += (sizeof(examen)*in_size)*in_num;
-	size += sizeof(sem_t)*in_num*3;//mutex, llenos y vacios
+	size += sizeof(sem_t)*in_num*3; //mutex, llenos y vacios
 
 	int q = initArgs['q'];
 	size += sizeof(examen)*q*3;
-	size += sizeof(sem_t)*3*3;//3 tipos de semaforos, 3 buffers
+	size += sizeof(sem_t)*3*3; //3 tipos de semaforos, 3 buffers
 
 	int out = initArgs['O'];
 	size += sizeof(examen) * out;
@@ -198,25 +198,54 @@ void PrintArgs(){
 
 }
 
+/*
+  initialize an array of sem_t with the given value,
+  the given length, and in the given offset of the shared memory
+ */
+void InitSemArray(int *off, const int val, const int len ){
+  for(int i = 0; i<len; i++){
+    sem_t *sem = (sem_t *) GetMem(*off, sizeof(sem_t));
+    *off += sizeof(sem_t);
+    sem_init(sem, 1, val);
+  }
+}
 
 void SetInitialValues(){
   int off = 0;
 
+  //static mem sem
   sem_t *mutexMem = (sem_t *) GetMem(off, sizeof(sem_t));
   off += sizeof(sem_t);
   sem_init(mutexMem, 1, 1);
   
+  int in_num = initArgs['i'];
+  int in_size = initArgs['I'];
+  int q = initArgs['q'];
+  int out = initArgs['O'];
+
+  //static structure
   memS *shmS = (memS *) GetMem(off, sizeof(memS));
   off += sizeof(memS);
-  shmS->i = initArgs['i'];
-  shmS->ie = initArgs['I'];
-  shmS->q = initArgs['q'];
-  shmS->oe = initArgs['O'];
+  shmS->i = in_num;
+  shmS->ie = in_size;
+  shmS->q = q;
+  shmS->oe = out;
   shmS->s = initArgs['s'];
   shmS->b = initArgs['b'];
   shmS->d = initArgs['d'];
 
+  //dinamic mem
+  //input
+  //buffers de entrada
+  shmS->buffsEntrada = off;
+  off += sizeof(examen) * in_size * in_num;
+  //mutex de entradas
+  shmS->mutexEntrada = off;
+  InitSemArray(&off, 1, in_num);
+  //Llenos Entradas
+  InitSemArray(&off, in_size, in_num);
 
+  
 }
 
 void SetDefaultValues(){
@@ -298,8 +327,9 @@ void SubControl() {
 void Register(int argc, string argv[]){
 	cout << "register" <<endl;
 
-	void *startSem = GetMem(0, sizeof(sem_t));
-	sem_t *mutexMem = (sem_t *) startSem;
+	int off = GetMemS().mutexEntrada;
+	sem_t *mutexMem = (sem_t *) GetMem(off, sizeof(sem_t));
+
 	cout<<"waiting mutex"<<endl;
 	sem_wait(mutexMem);
 	cout<<"IN mutex, press any key to exit"<<endl;
