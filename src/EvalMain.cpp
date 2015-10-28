@@ -20,6 +20,7 @@
 #include <map>
 #include <fstream>
 #include <ostream>
+#include <sstream>
 
 using namespace std;
 
@@ -60,6 +61,8 @@ struct memS{
   int mutexSalida;
   int llenosSalida;
   int vaciosSalida;
+
+  //TODO: semId
 };
 
 /*
@@ -370,10 +373,17 @@ void SubControl() {
 void ProcesInput(istream& fs, ostream& out = cout){
   int tray, quantity;
   char type;
+  string line;
   
-  //TODO: proces multiple input lines
-  if(fs>>tray && fs>>type && fs>>quantity){
-    out<<"tray: "<<tray<<" type: "<<type<<" quantity: "<<quantity<<endl;
+  //proces multiple input lines
+  while(getline(fs, line)){
+    stringstream *ss = new stringstream(line);
+    if(*ss>>tray && *ss>>type && *ss>>quantity){
+      cout<<"tray: "<<tray<<" type: "<<type<<" quantity: "<<quantity<<endl;
+      //TODO: generate sample ID
+    
+    }
+    delete ss;
   }
 }
 
@@ -389,8 +399,8 @@ void Register(int argc, string argv[]){
 
 	if(argc-curArg == 1 && argv[curArg]=="-"){
 	  //modo interactivo
-	  cout<<">";
-	  ProcesInput(cin);
+	  cout<<"Interactive mode:"<<endl;
+	  ProcesInput(cin); 
 	} else {
 	  //leer de archivo
 	  while(argc > curArg){
