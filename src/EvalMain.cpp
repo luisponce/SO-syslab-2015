@@ -35,6 +35,12 @@ struct examen{
   int id;
   t_examen tipo;
   t_resultado resultado;
+
+  examen(int id, t_examen tipo){
+    this->id = id;
+    this->tipo = tipo;
+    this->resultado = resultado;
+  }
 };
 
 
@@ -46,6 +52,8 @@ struct memS{
   int s;
   int b;
   int d;
+
+  int examId;
 
   int buffsEntrada;
   int mutexEntrada;
@@ -61,8 +69,6 @@ struct memS{
   int mutexSalida;
   int llenosSalida;
   int vaciosSalida;
-
-  //TODO: semId
 };
 
 /*
@@ -176,17 +182,6 @@ void* GetMem(int offset, int len){
 /*
 / Obtiene una copia de la memoria compartida
 / 
-/ i    Valor
-/ ------------   
-/ 1    -i
-/ 2    -ie
-/ 3    -q
-/ 4    -oe
-/ 5    React s
-/ 6    React B
-/ 7    React D
-/ 9-12 Refs a MemD
-/ 
 */
 memS GetMemS(){
   sem_t *mutex = (sem_t*) GetMem(0, sizeof(sem_t));
@@ -250,6 +245,8 @@ void SetInitialValues(){
   shmS->b = initArgs['b'];
   shmS->d = initArgs['d'];
 
+  shmS->examId = 0;
+
   //dinamic mem
   //input
   //buffers de entrada
@@ -292,7 +289,10 @@ void SetInitialValues(){
   //vacios salida
   shmS->vaciosSalida = off;
   InitSemArray(&off, out, 1);
+
 }
+
+
 
 void SetDefaultValues(){
   initArgs.insert(pair<char, int>('i', 5)); //-i
@@ -370,6 +370,21 @@ void SubControl() {
 	return;
 }
 
+int GenSampleId(){
+  int id;
+  
+  sem_t *mutex = (sem_t *) GetMem(0, sizeof(sem_t));
+  sem_wait(mutex);
+
+  memS *mem = (memS *) GetMem(sizeof(sem_t), sizeof(sem_t));
+  id = mem->examId;
+  mem->examId++;
+
+  sem_post(mutex);
+  
+  return id;
+}
+
 void ProcesInput(istream& fs, ostream& out = cout){
   int tray, quantity;
   char type;
@@ -379,9 +394,53 @@ void ProcesInput(istream& fs, ostream& out = cout){
   while(getline(fs, line)){
     stringstream *ss = new stringstream(line);
     if(*ss>>tray && *ss>>type && *ss>>quantity){
-      cout<<"tray: "<<tray<<" type: "<<type<<" quantity: "<<quantity<<endl;
-      //TODO: generate sample ID
-    
+      bool skip = false;
+      t_examen tipo;
+      switch(type){
+      case 'B':
+	tipo = B;
+	break;
+      case 'S':
+	tipo = S;
+	break;
+      case 'D':
+	tipo = D;
+	break;
+      default:
+	skip = true;
+	break;
+      }
+
+      int maxTray = GetMemS().i;
+      if(tray >= maxTray) skip = true;
+      if(quantity > 5) skip = true;
+      
+      if(!skip){
+	cout<<"tray: "<<tray<<" type: "<<type<<" quantity: "<<quantity<<endl;
+	for(int i=0; i<quantity; i++){
+	  int id = GenSampleId();
+	  
+	  examen *ex = new examen(id, tipo);
+	  
+	  memS shms = GetMemS();
+	  sem_t *vacios = (sem_t*) 
+	    GetMem(shms.vaciosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
+	  sem_t *mutex = (sem_t *)
+	    GetMem(shms.mutexEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
+	  sem_t *llenos = (sem_t *) 
+	    GetMem(shms.llenosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
+
+	  sem_wait(vacios);
+	  sem_wait(mutex);
+	  //TODO: ingresar elemento
+	  sem_post(mutex);
+	  sem_post(llenos);
+
+	  cout<<"Sample "<<i<<" id : "<<id<<endl;
+	}
+      } else {
+	cout<<"skiped!"<<endl;
+      }
     }
     delete ss;
   }
@@ -413,21 +472,6 @@ void Register(int argc, string argv[]){
 	  }
 	}
 
-	return;
-
-	memS mems = GetMemS();
-	int off = mems.vaciosEntrada;
-	sem_t *mutexMem = (sem_t *) GetMem(off, sizeof(sem_t));
-
-	cout<<"waiting mutex"<<endl;
-	sem_wait(mutexMem);
-	cout<<"IN mutex, press any key to exit"<<endl;
-	char d;
-	cin>>d;
-	sem_post(mutexMem);
-	cout<<"OUT mutex"<<endl;
-
-	delete [] argv;
 	return;
 }
 
