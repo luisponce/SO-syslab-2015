@@ -35,11 +35,12 @@ struct examen{
   int id;
   t_examen tipo;
   t_resultado resultado;
+  int quantity;
 
-  examen(int id, t_examen tipo){
+  examen(int id, t_examen tipo, int q){
     this->id = id;
     this->tipo = tipo;
-    this->resultado = resultado;
+    this->quantity = q;
   }
 };
 
@@ -59,6 +60,8 @@ struct memS{
   int mutexEntrada;
   int llenosEntrada;
   int vaciosEntrada;
+  int inEntrada;
+  int outEntrada;
   
   int buffsInternos;
   int mutexInternos;
@@ -117,6 +120,7 @@ int CalculateMemMaxSize(){
 	int in_size = initArgs['I'];
 	size += (sizeof(examen)*in_size)*in_num;
 	size += sizeof(sem_t)*in_num*3; //mutex, llenos y vacios
+	size += sizeof(int)*in_num*2; //in, out
 
 	int q = initArgs['q'];
 	size += sizeof(examen)*q*3;
@@ -221,6 +225,18 @@ void InitSemArray(int *off, const int val, const int len ){
   }
 }
 
+/*
+  initialize an array of int with the given value,
+  the given length, and in the given offset of the shared memory
+ */
+void InitIntArray(int *off, const int val, const int len ){
+  for(int i = 0; i<len; i++){
+    int *num = (int *) GetMem(*off, sizeof(int));
+    *off += sizeof(int);
+    *num = val;
+  }
+}
+
 void SetInitialValues(){
   int off = 0;
 
@@ -261,7 +277,13 @@ void SetInitialValues(){
   //vacios Entradas
   shmS->vaciosEntrada = off;
   InitSemArray(&off, in_size, in_num);
-  
+  //in Entrada
+  shmS->inEntrada = off;
+  InitIntArray(&off, 0, in_num);
+  //out Entrada
+  shmS->outEntrada = off;
+  InitIntArray(&off, 0, in_num);
+
   //internas
   //buffers internos
   shmS->buffsInternos = off;
@@ -417,27 +439,35 @@ void ProcesInput(istream& fs, ostream& out = cout){
       
       if(!skip){
 	cout<<"tray: "<<tray<<" type: "<<type<<" quantity: "<<quantity<<endl;
-	for(int i=0; i<quantity; i++){
-	  int id = GenSampleId();
-	  
-	  examen *ex = new examen(id, tipo);
-	  
-	  memS shms = GetMemS();
-	  sem_t *vacios = (sem_t*) 
-	    GetMem(shms.vaciosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
-	  sem_t *mutex = (sem_t *)
-	    GetMem(shms.mutexEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
-	  sem_t *llenos = (sem_t *) 
-	    GetMem(shms.llenosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
+	int id = GenSampleId();
+	
+	examen *ex = new examen(id, tipo, quantity);
+	
+	memS shms = GetMemS();
+	sem_t *vacios = (sem_t*) 
+	  GetMem(shms.vaciosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
+	sem_t *mutex = (sem_t *)
+	  GetMem(shms.mutexEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
+	sem_t *llenos = (sem_t *) 
+	  GetMem(shms.llenosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
+	
+	sem_wait(vacios);
+	sem_wait(mutex);
+	//TODO: ingresar elemento
+	int *in = (int *) 
+	  GetMem(shms.inEntrada + (sizeof(int)*tray), sizeof(int));
+	examen *e = (examen *) 
+	  GetMem(shms.buffsEntrada + (sizeof(examen)*shms.ie*tray) 
+		 + (sizeof(examen) * *in), sizeof(examen));
 
-	  sem_wait(vacios);
-	  sem_wait(mutex);
-	  //TODO: ingresar elemento
-	  sem_post(mutex);
-	  sem_post(llenos);
+	*e = *ex; 
 
-	  cout<<"Sample "<<i<<" id : "<<id<<endl;
-	}
+	*in = (*in + 1) % shms.ie;
+	sem_post(mutex);
+	sem_post(llenos);
+
+	cout<<"id : "<<id<<endl;
+	
       } else {
 	cout<<"skiped!"<<endl;
       }
