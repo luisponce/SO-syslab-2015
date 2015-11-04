@@ -10,7 +10,6 @@ struct examen{
   int quantity;
 };
 
-
 struct memS{
   int i;
   int ie;
@@ -21,6 +20,9 @@ struct memS{
   int d;
 
   int examId;
+
+  //refs
+  int scout;
 
   int buffsEntrada;
   int mutexEntrada;
