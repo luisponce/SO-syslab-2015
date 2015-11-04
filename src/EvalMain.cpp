@@ -31,13 +31,12 @@ string memName = "evaluator";
 
 map<char, int> initArgs;
 
-struct examen{
-  examen(int id, t_examen tipo, int q){
-    this->id = id;
-    this->tipo = tipo;
-    this->quantity = q;
-  }
-};
+
+examen::examen(int id, t_examen tipo, int q){
+  this->id = id;
+  this->tipo = tipo;
+  this->quantity = q;
+}
 
 /*
 /	mapea un par de argumentos, dado un modo y su valor(int)

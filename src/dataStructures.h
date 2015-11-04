@@ -8,6 +8,8 @@ struct examen{
   t_examen tipo;
   t_resultado resultado;
   int quantity;
+
+  examen(int id, t_examen tipo, int q);
 };
 
 struct memS{
