@@ -18,47 +18,13 @@
 #include <sys/types.h>
 #include <semaphore.h>
 #include <map>
+#include "dataStructures.h"
 
 using namespace std;
 
 string memName = "evaluator";
 
 map<char, int> initArgs;
-
-enum t_examen{B, S, D};
-enum t_resultado{p, n, r}; //r = - (Repetir)
-
-struct examen{
-  int id;
-  t_examen tipo;
-  t_resultado resultado;
-};
-
-
-struct memS{
-  int i;
-  int ie;
-  int q;
-  int oe;
-  int s;
-  int b;
-  int d;
-
-  int buffsEntrada;
-  int mutexEntrada;
-  int llenosEntrada;
-  int vaciosEntrada;
-  
-  int buffsInternos;
-  int mutexInternos;
-  int llenosInternos;
-  int vaciosInternos;
-
-  int buffsSalida;
-  int mutexSalida;
-  int llenosSalida;
-  int vaciosSalida;
-};
 
 /*
 /	mapea un par de argumentos, dado un modo y su valor(int)
@@ -94,7 +60,7 @@ void MapArg(string mode, int value){
     return;
   }
 
-  
+
 }
 
 int CalculateMemMaxSize(){
@@ -170,9 +136,9 @@ void* GetMem(int offset, int len){
 
 /*
 / Obtiene una copia de la memoria compartida
-/ 
+/
 / i    Valor
-/ ------------   
+/ ------------
 / 1    -i
 / 2    -ie
 / 3    -q
@@ -181,7 +147,7 @@ void* GetMem(int offset, int len){
 / 6    React B
 / 7    React D
 / 9-12 Refs a MemD
-/ 
+/
 */
 memS GetMemS(){
   sem_t *mutex = (sem_t*) GetMem(0, sizeof(sem_t));
@@ -197,7 +163,7 @@ memS GetMemS(){
 }
 
 void PrintArgs(){
-  
+
   memS mem = GetMemS();
   cout<< "Colas input -i: "<< initArgs['i'] << " - from memS: " << mem.i  << endl;
   cout<< "Capacidad input -ie: "<< initArgs['I'] << " - from memS: " << mem.ie  << endl;
@@ -228,7 +194,7 @@ void SetInitialValues(){
   sem_t *mutexMem = (sem_t *) GetMem(off, sizeof(sem_t));
   off += sizeof(sem_t);
   sem_init(mutexMem, 1, 1);
-  
+
   int in_num = initArgs['i'];
   int in_size = initArgs['I'];
   int q = initArgs['q'];
@@ -259,7 +225,7 @@ void SetInitialValues(){
   //vacios Entradas
   shmS->vaciosEntrada = off;
   InitSemArray(&off, in_size, in_num);
-  
+
   //internas
   //buffers internos
   shmS->buffsInternos = off;
@@ -301,7 +267,7 @@ void SetDefaultValues(){
 
 void Initialize(int argc, string argv[]){
   cout<<"initialize "<<endl;
-	
+
   //mapear argumentos
   int curArg = 0;
   if((argc % 2) == 0) {
@@ -318,9 +284,9 @@ void Initialize(int argc, string argv[]){
     return;
   }
   SetDefaultValues();
-  
+
   CreateSharedMem();
-  
+
   SetInitialValues();
 
   PrintArgs();
