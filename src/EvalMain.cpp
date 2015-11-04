@@ -243,7 +243,7 @@ void SetInitialValues(){
 
   //dinamic mem
   //scout sem para cout
-  shms->scout = off;
+  shmS->scout = off;
   InitSemArray(&off, 1, 1);
 
   //input
