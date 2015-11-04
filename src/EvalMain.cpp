@@ -352,6 +352,10 @@ void Initialize(int argc, string argv[]){
 
   PrintArgs();
 
+  //TODO: hilos de colas de entrada
+  
+  //TODO: hilos analizadores
+
   delete [] argv;
   return;
 }
@@ -453,7 +457,7 @@ void ProcesInput(istream& fs, ostream& out = cout){
 	
 	sem_wait(vacios);
 	sem_wait(mutex);
-	//TODO: ingresar elemento
+	// ingresar elemento
 	int *in = (int *) 
 	  GetMem(shms.inEntrada + (sizeof(int)*tray), sizeof(int));
 	examen *e = (examen *) 
