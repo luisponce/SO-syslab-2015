@@ -8,6 +8,8 @@
 //Crear metodo que valida cadena de caracteres
 //Crear metodo que valide cadena de numeros
 
+#include "dataStructures.h"
+
 #include <sys/mman.h>
 #include <fcntl.h>           /* For O_* constants */
 #include <sys/stat.h>        /* For mode constants */
@@ -18,13 +20,23 @@
 #include <sys/types.h>
 #include <semaphore.h>
 #include <map>
-#include "dataStructures.h"
+#include <fstream>
+#include <ostream>
+#include <sstream>
 
 using namespace std;
 
 string memName = "evaluator";
 
 map<char, int> initArgs;
+
+struct examen{
+  examen(int id, t_examen tipo, int q){
+    this->id = id;
+    this->tipo = tipo;
+    this->quantity = q;
+  }
+};
 
 /*
 /	mapea un par de argumentos, dado un modo y su valor(int)
@@ -72,6 +84,7 @@ int CalculateMemMaxSize(){
 	int in_size = initArgs['I'];
 	size += (sizeof(examen)*in_size)*in_num;
 	size += sizeof(sem_t)*in_num*3; //mutex, llenos y vacios
+	size += sizeof(int)*in_num*2; //in, out
 
 	int q = initArgs['q'];
 	size += sizeof(examen)*q*3;
@@ -136,6 +149,7 @@ void* GetMem(int offset, int len){
 
 /*
 / Obtiene una copia de la memoria compartida
+<<<<<<< HEAD
 /
 / i    Valor
 / ------------
@@ -148,6 +162,9 @@ void* GetMem(int offset, int len){
 / 7    React D
 / 9-12 Refs a MemD
 /
+=======
+/ 
+>>>>>>> 9f8023fb581873318be2e7b3da2f7aecea17f112
 */
 memS GetMemS(){
   sem_t *mutex = (sem_t*) GetMem(0, sizeof(sem_t));
@@ -187,6 +204,18 @@ void InitSemArray(int *off, const int val, const int len ){
   }
 }
 
+/*
+  initialize an array of int with the given value,
+  the given length, and in the given offset of the shared memory
+ */
+void InitIntArray(int *off, const int val, const int len ){
+  for(int i = 0; i<len; i++){
+    int *num = (int *) GetMem(*off, sizeof(int));
+    *off += sizeof(int);
+    *num = val;
+  }
+}
+
 void SetInitialValues(){
   int off = 0;
 
@@ -211,6 +240,8 @@ void SetInitialValues(){
   shmS->b = initArgs['b'];
   shmS->d = initArgs['d'];
 
+  shmS->examId = 0;
+
   //dinamic mem
   //input
   //buffers de entrada
@@ -225,6 +256,12 @@ void SetInitialValues(){
   //vacios Entradas
   shmS->vaciosEntrada = off;
   InitSemArray(&off, in_size, in_num);
+  //in Entrada
+  shmS->inEntrada = off;
+  InitIntArray(&off, 0, in_num);
+  //out Entrada
+  shmS->outEntrada = off;
+  InitIntArray(&off, 0, in_num);
 
   //internas
   //buffers internos
@@ -253,7 +290,10 @@ void SetInitialValues(){
   //vacios salida
   shmS->vaciosSalida = off;
   InitSemArray(&off, out, 1);
+
 }
+
+
 
 void SetDefaultValues(){
   initArgs.insert(pair<char, int>('i', 5)); //-i
@@ -290,6 +330,10 @@ void Initialize(int argc, string argv[]){
   SetInitialValues();
 
   PrintArgs();
+
+  //TODO: hilos de colas de entrada
+  
+  //TODO: hilos analizadores
 
   delete [] argv;
   return;
@@ -331,22 +375,116 @@ void SubControl() {
 	return;
 }
 
+int GenSampleId(){
+  int id;
+  
+  sem_t *mutex = (sem_t *) GetMem(0, sizeof(sem_t));
+  sem_wait(mutex);
+
+  memS *mem = (memS *) GetMem(sizeof(sem_t), sizeof(sem_t));
+  id = mem->examId;
+  mem->examId++;
+
+  sem_post(mutex);
+  
+  return id;
+}
+
+void ProcesInput(istream& fs, ostream& out = cout){
+  int tray, quantity;
+  char type;
+  string line;
+  
+  //proces multiple input lines
+  while(getline(fs, line)){
+    stringstream *ss = new stringstream(line);
+    if(*ss>>tray && *ss>>type && *ss>>quantity){
+      bool skip = false;
+      t_examen tipo;
+      switch(type){
+      case 'B':
+	tipo = B;
+	break;
+      case 'S':
+	tipo = S;
+	break;
+      case 'D':
+	tipo = D;
+	break;
+      default:
+	skip = true;
+	break;
+      }
+
+      int maxTray = GetMemS().i;
+      if(tray >= maxTray) skip = true;
+      if(quantity > 5) skip = true;
+      
+      if(!skip){
+	cout<<"tray: "<<tray<<" type: "<<type<<" quantity: "<<quantity<<endl;
+	int id = GenSampleId();
+	
+	examen *ex = new examen(id, tipo, quantity);
+	
+	memS shms = GetMemS();
+	sem_t *vacios = (sem_t*) 
+	  GetMem(shms.vaciosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
+	sem_t *mutex = (sem_t *)
+	  GetMem(shms.mutexEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
+	sem_t *llenos = (sem_t *) 
+	  GetMem(shms.llenosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
+	
+	sem_wait(vacios);
+	sem_wait(mutex);
+	// ingresar elemento
+	int *in = (int *) 
+	  GetMem(shms.inEntrada + (sizeof(int)*tray), sizeof(int));
+	examen *e = (examen *) 
+	  GetMem(shms.buffsEntrada + (sizeof(examen)*shms.ie*tray) 
+		 + (sizeof(examen) * *in), sizeof(examen));
+
+	*e = *ex; 
+
+	*in = (*in + 1) % shms.ie;
+	sem_post(mutex);
+	sem_post(llenos);
+
+	cout<<"id : "<<id<<endl;
+	
+      } else {
+	cout<<"skiped!"<<endl;
+      }
+    }
+    delete ss;
+  }
+}
+
 void Register(int argc, string argv[]){
 	cout << "register" <<endl;
+	
+	int curArg = 0;
+	if(argc > 2 && argv[curArg] == "-n"){
+	  //TODO: si argv no es string -> error
+	  memName = argv[curArg+1];
+	  curArg += 2; 
+	}
 
-	memS mems = GetMemS();
-	int off = mems.vaciosEntrada;
-	sem_t *mutexMem = (sem_t *) GetMem(off, sizeof(sem_t));
+	if(argc-curArg == 1 && argv[curArg]=="-"){
+	  //modo interactivo
+	  cout<<"Interactive mode:"<<endl;
+	  ProcesInput(cin); 
+	} else {
+	  //leer de archivo
+	  while(argc > curArg){
+	    string fileName = argv[curArg];
+	    fstream file;
+	    file.open(fileName);
+	    ProcesInput(file);
+	    file.close();
+	    curArg++;
+	  }
+	}
 
-	cout<<"waiting mutex"<<endl;
-	sem_wait(mutexMem);
-	cout<<"IN mutex, press any key to exit"<<endl;
-	char d;
-	cin>>d;
-	sem_post(mutexMem);
-	cout<<"OUT mutex"<<endl;
-
-	delete [] argv;
 	return;
 }
 

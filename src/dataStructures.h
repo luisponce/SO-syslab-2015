@@ -7,6 +7,7 @@ struct examen{
   int id;
   t_examen tipo;
   t_resultado resultado;
+  int quantity;
 };
 
 
@@ -19,11 +20,15 @@ struct memS{
   int b;
   int d;
 
+  int examId;
+
   int buffsEntrada;
   int mutexEntrada;
   int llenosEntrada;
   int vaciosEntrada;
-
+  int inEntrada;
+  int outEntrada;
+  
   int buffsInternos;
   int mutexInternos;
   int llenosInternos;
