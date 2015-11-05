@@ -37,9 +37,13 @@ struct memS{
   int mutexInternos;
   int llenosInternos;
   int vaciosInternos;
+  int inInternos;
+  int outInternos;
 
   int buffsSalida;
   int mutexSalida;
   int llenosSalida;
   int vaciosSalida;
+  int inSalida;
+  int outSalida;
 };

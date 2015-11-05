@@ -89,10 +89,12 @@ int CalculateMemMaxSize(){
 	int q = initArgs['q'];
 	size += sizeof(examen)*q*3;
 	size += sizeof(sem_t)*3*3; //3 tipos de semaforos, 3 buffers
+	size += sizeof(int)*3*2; //in, out
 
 	int out = initArgs['O'];
 	size += sizeof(examen) * out;
 	size += sizeof(sem_t)*3;
+	size += sizeof(int)*2;//in, out
 
   //variables auxiliares
   size += sizeof(sem_t);//scout
@@ -279,6 +281,12 @@ void SetInitialValues(){
   //vacios Internos
   shmS->vaciosInternos = off;
   InitSemArray(&off, q, 3);
+  //in Entrada
+  shmS->inInternos = off;
+  InitIntArray(&off, 0, 3);
+  //out Entrada
+  shmS->outInternos = off;
+  InitIntArray(&off, 0, 3);
 
   //salida
   //buffer salida
@@ -293,7 +301,12 @@ void SetInitialValues(){
   //vacios salida
   shmS->vaciosSalida = off;
   InitSemArray(&off, out, 1);
-
+  //in Entrada
+  shmS->inSalida = off;
+  InitIntArray(&off, 0, 1);
+  //out Entrada
+  shmS->outSalida = off;
+  InitIntArray(&off, 0, 1);
 }
 
 
@@ -337,8 +350,50 @@ void EnqueueThread(int tray){
     sem_post(vacios);
 
     sem_wait(scout);
-    cout << "tray: " << tray << " Id Elemento recibido: " << element.id << endl;
+    cout << "EnQueue " << tray << ": Id Elemento recibido: " << element.id << endl;
     sem_post(scout);
+
+    //decidir que cola va
+    int destQueue;
+    switch(element.tipo){
+    case B:
+      destQueue = 0;
+      break;
+    case S:
+      destQueue = 1;
+      break;
+    case D:
+      destQueue = 2;
+      break;
+    }
+
+    vacios = (sem_t*) 
+      GetMem(shms.vaciosInternos + (sizeof(sem_t)*destQueue), sizeof(sem_t));
+    mutex = (sem_t *)
+      GetMem(shms.mutexInternos + (sizeof(sem_t)*destQueue), sizeof(sem_t));
+    llenos = (sem_t *) 
+      GetMem(shms.llenosInternos + (sizeof(sem_t)*destQueue), sizeof(sem_t));
+    
+    sem_wait(vacios);
+    sem_wait(mutex);
+
+    int *in = (int *) 
+      GetMem(shms.inInternos + (sizeof(int)*destQueue), sizeof(int));
+    e = (examen *) 
+      GetMem(shms.buffsInternos + (sizeof(examen)*shms.q*destQueue) 
+	     + (sizeof(examen) * *in), sizeof(examen));
+    
+    *e = element; 
+    *in = (*in + 1) % shms.q;
+    
+    sem_post(mutex);
+    sem_post(llenos);
+
+    sem_wait(scout);
+    cout << "Enqueue " << tray;
+    cout<< ": elemento " << element.id << " ingresado a cola interna " << destQueue << endl;
+    sem_post(scout);
+
   }
 }
 
