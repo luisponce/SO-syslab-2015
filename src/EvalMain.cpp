@@ -397,6 +397,69 @@ void EnqueueThread(int tray){
   }
 }
 
+void EvalThread(int tray){
+  for(;;){
+    examen element;
+
+    memS shms = GetMemS();
+    sem_t *vacios = (sem_t*) 
+      GetMem(shms.vaciosInternos + (sizeof(sem_t)*tray), sizeof(sem_t));
+    sem_t *mutex = (sem_t *)
+      GetMem(shms.mutexInternos + (sizeof(sem_t)*tray), sizeof(sem_t));
+    sem_t *llenos = (sem_t *) 
+      GetMem(shms.llenosInternos + (sizeof(sem_t)*tray), sizeof(sem_t));
+    sem_t *scout = (sem_t *) GetMem(shms.scout, sizeof(sem_t));
+
+    sem_wait(llenos);
+    sem_wait(mutex);
+
+    int *out = (int *) 
+      GetMem(shms.outInternos + (sizeof(int)*tray), sizeof(int));
+    examen *e = (examen *) 
+      GetMem(shms.buffsInternos + (sizeof(examen)*shms.q*tray) 
+       + (sizeof(examen) * *out), sizeof(examen));
+
+    element = *e;
+    *out = (*out + 1) % shms.q;
+
+    sem_post(mutex);
+    sem_post(vacios);
+
+    sem_wait(scout);
+    cout << "Eval " << tray << ": Id Elemento recibido: " << element.id << endl;
+    sem_post(scout);
+
+    //TODO: proces exam
+
+    vacios = (sem_t*) 
+      GetMem(shms.vaciosSalida, sizeof(sem_t));
+    mutex = (sem_t *)
+      GetMem(shms.mutexSalida, sizeof(sem_t));
+    llenos = (sem_t *) 
+      GetMem(shms.llenosSalida, sizeof(sem_t));
+    
+    sem_wait(vacios);
+    sem_wait(mutex);
+
+    int *in = (int *) 
+      GetMem(shms.inSalida, sizeof(int));
+    e = (examen *) 
+      GetMem(shms.buffsSalida + (sizeof(examen) * *in), sizeof(examen));
+    
+    *e = element; 
+    *in = (*in + 1) % shms.oe;
+    
+    sem_post(mutex);
+    sem_post(llenos);
+
+    sem_wait(scout);
+    cout << "Eval " << tray;
+    cout<< ": elemento " << element.id << " ingresado a cola de salida " << endl;
+    sem_post(scout);
+
+  }
+}
+
 void Initialize(int argc, string argv[]){
   cout<<"initialize "<<endl;
 
@@ -429,14 +492,16 @@ void Initialize(int argc, string argv[]){
     cur.detach();
   }
     
-    for(;;){ }
-
-  //TODO: hilos analizadores
-
+    
+  // hilos analizadores
+  for(int i = 0; i<3; i++){
+    thread cur (EvalThread, i);
+    cur.detach();
+  }
 
   delete [] argv;
 
-  //for(;;);
+  for(;;);
 
   return;
 }
