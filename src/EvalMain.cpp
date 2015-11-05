@@ -337,7 +337,7 @@ void EnqueueThread(int tray){
     sem_post(vacios);
 
     sem_wait(scout);
-    cout << "Id Elemento recibido: " << element.id << endl;
+    cout << "tray: " << tray << " Id Elemento recibido: " << element.id << endl;
     sem_post(scout);
   }
 }
@@ -368,17 +368,20 @@ void Initialize(int argc, string argv[]){
 
   PrintArgs();
 
-
   //hilos de colas de entrada
   for(int i = 0; i<initArgs['i']; i++){
-    thread t (EnqueueThread, i);
+    thread cur (EnqueueThread, i);
+    cur.detach();
   }
+    
+    for(;;){ }
 
   //TODO: hilos analizadores
 
+
   delete [] argv;
 
-  for(;;);
+  //for(;;);
 
   return;
 }
