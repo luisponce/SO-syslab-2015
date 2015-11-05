@@ -8,8 +8,9 @@ struct examen{
   t_examen tipo;
   t_resultado resultado;
   int quantity;
+  examen() {}
+  examen(int id, t_examen tipo, int q);
 };
-
 
 struct memS{
   int i;
@@ -21,6 +22,9 @@ struct memS{
   int d;
 
   int examId;
+
+  //refs
+  int scout;
 
   int buffsEntrada;
   int mutexEntrada;
