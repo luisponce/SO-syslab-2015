@@ -1,6 +1,10 @@
 # Bitbucket README #
 Practica para Sistemas Operativos (20152)
 
+# NOTAS
+
+* Colas internas almacenadas en este orden: B, S, D
+
 # Modelo de memoria
 Espacio Reservado en memoria compartida:
 
