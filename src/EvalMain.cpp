@@ -588,7 +588,7 @@ void ProcesInput(istream& fs, ostream& out = cout){
       if(quantity > 5) skip = true;
       
       if(!skip){
-      	cout<<"tray: "<<tray<<" type: "<<type<<" quantity: "<<quantity<<endl;
+      	//cout<<"tray: "<<tray<<" type: "<<type<<" quantity: "<<quantity<<endl;
       	int id = GenSampleId();
 	
       	examen *ex = new examen(id, tipo, quantity);
@@ -617,12 +617,13 @@ void ProcesInput(istream& fs, ostream& out = cout){
       	sem_post(mutex);
       	sem_post(llenos);
 
-      	cout<<"id : "<<id<<endl;
-	
+      	//cout<<"id : "<<id<<endl;
+	out<<id<<" ";
       } else {
-        cout<<"skiped!"<<endl;
+        //cout<<"skiped!"<<endl;
       }
     }
+    out<<endl;
     delete ss;
   }
 }
@@ -646,8 +647,11 @@ void Register(int argc, string argv[]){
 	  while(argc > curArg){
 	    string fileName = argv[curArg];
 	    fstream file;
+	    ofstream output;
+	    string outName = fileName.substr(0,fileName.length()-4) + ".spl";
 	    file.open(fileName);
-	    ProcesInput(file);
+	    output.open(outName);
+	    ProcesInput(file, output);
 	    file.close();
 	    curArg++;
 	  }
