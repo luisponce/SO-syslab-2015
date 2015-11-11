@@ -459,10 +459,18 @@ void EvalThread(int tray){
     sleep(time);
 
     //Get Result
-    
+    int resultRand = rand() % 100 + 1;
+    if(resultRand <= 50){
+      element.resultado = p;
+    } else if(resultRand <= 50+35) {
+      element.resultado = n;
+    } else {
+      element.resultado = r;
+    }
+
     sem_wait(scout);
     cout << "Eval " << tray << ": elemento " << element.id;
-    cout << " DONE  with result " << endl;
+    cout << " DONE  with result " << resultRand << endl;
     sem_post(scout);
     
 
