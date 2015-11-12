@@ -8,14 +8,15 @@ struct examen{
   t_examen tipo;
   t_resultado resultado;
   int quantity;
+  int queue;
   examen() {}
-  examen(int id, t_examen tipo, int q);
+  examen(int id, t_examen tipo, int q, int queueIn);
 };
 
 struct memS{
   int i;
   int ie;
-  int q;
+  int ee;
   int oe;
   int s;
   int b;
