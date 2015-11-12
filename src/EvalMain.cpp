@@ -397,6 +397,22 @@ void EnqueueThread(int tray){
   }
 }
 
+int CheckReactive(examen element, memS* rmems){
+  int react;
+  switch(element.tipo){
+  case B:
+    react = rmems->b;
+    break;
+  case S:
+    react = rmems->s;
+    break;
+  case D:
+    react = rmems->d;
+    break;
+  }
+  return react;
+}
+
 void EvalThread(int tray){
   for(;;){
     examen element;
@@ -429,8 +445,33 @@ void EvalThread(int tray){
     cout << "Eval " << tray << ": Id Elemento recibido: " << element.id << endl;
     sem_post(scout);
 
-    //TODO: wait for reactive
-
+    //check for reactive
+    sem_t *mutexShms = (sem_t *) GetMem(0, sizeof(sem_t));
+    sem_wait(mutexShms);
+    memS *rmems = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
+    int react;
+    react = CheckReactive(element, rmems);
+    while(element.quantity > react){
+      sem_post(mutexShms);
+      //TODO: wait for signal of more
+      
+      sem_wait(mutexShms);
+      rmems = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
+      react = CheckReactive(element, rmems);
+    }
+    switch(element.tipo){
+    case B:
+      rmems->b -= element.quantity;
+      break;
+    case S:
+      rmems->s -= element.quantity;
+      break;
+    case D:
+      rmems->d -= element.quantity;
+      break;
+    }
+    sem_post(mutexShms);
+    
     // proces exam
     int randMin;
     int randMax;
