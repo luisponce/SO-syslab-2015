@@ -32,7 +32,7 @@ struct memS{
   int vaciosEntrada;
   int inEntrada;
   int outEntrada;
-  
+
   int buffsInternos;
   int mutexInternos;
   int llenosInternos;

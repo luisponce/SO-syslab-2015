@@ -326,21 +326,21 @@ void EnqueueThread(int tray){
     examen element;
 
     memS shms = GetMemS();
-    sem_t *vacios = (sem_t*) 
+    sem_t *vacios = (sem_t*)
       GetMem(shms.vaciosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
     sem_t *mutex = (sem_t *)
       GetMem(shms.mutexEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
-    sem_t *llenos = (sem_t *) 
+    sem_t *llenos = (sem_t *)
       GetMem(shms.llenosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
     sem_t *scout = (sem_t *) GetMem(shms.scout, sizeof(sem_t));
 
     sem_wait(llenos);
     sem_wait(mutex);
 
-    int *out = (int *) 
+    int *out = (int *)
       GetMem(shms.outEntrada + (sizeof(int)*tray), sizeof(int));
-    examen *e = (examen *) 
-      GetMem(shms.buffsEntrada + (sizeof(examen)*shms.ie*tray) 
+    examen *e = (examen *)
+      GetMem(shms.buffsEntrada + (sizeof(examen)*shms.ie*tray)
        + (sizeof(examen) * *out), sizeof(examen));
 
     element = *e;
@@ -367,25 +367,25 @@ void EnqueueThread(int tray){
       break;
     }
 
-    vacios = (sem_t*) 
+    vacios = (sem_t*)
       GetMem(shms.vaciosInternos + (sizeof(sem_t)*destQueue), sizeof(sem_t));
     mutex = (sem_t *)
       GetMem(shms.mutexInternos + (sizeof(sem_t)*destQueue), sizeof(sem_t));
-    llenos = (sem_t *) 
+    llenos = (sem_t *)
       GetMem(shms.llenosInternos + (sizeof(sem_t)*destQueue), sizeof(sem_t));
-    
+
     sem_wait(vacios);
     sem_wait(mutex);
 
-    int *in = (int *) 
+    int *in = (int *)
       GetMem(shms.inInternos + (sizeof(int)*destQueue), sizeof(int));
-    e = (examen *) 
-      GetMem(shms.buffsInternos + (sizeof(examen)*shms.q*destQueue) 
+    e = (examen *)
+      GetMem(shms.buffsInternos + (sizeof(examen)*shms.q*destQueue)
 	     + (sizeof(examen) * *in), sizeof(examen));
-    
-    *e = element; 
+
+    *e = element;
     *in = (*in + 1) % shms.q;
-    
+
     sem_post(mutex);
     sem_post(llenos);
 
@@ -402,21 +402,21 @@ void EvalThread(int tray){
     examen element;
 
     memS shms = GetMemS();
-    sem_t *vacios = (sem_t*) 
+    sem_t *vacios = (sem_t*)
       GetMem(shms.vaciosInternos + (sizeof(sem_t)*tray), sizeof(sem_t));
     sem_t *mutex = (sem_t *)
       GetMem(shms.mutexInternos + (sizeof(sem_t)*tray), sizeof(sem_t));
-    sem_t *llenos = (sem_t *) 
+    sem_t *llenos = (sem_t *)
       GetMem(shms.llenosInternos + (sizeof(sem_t)*tray), sizeof(sem_t));
     sem_t *scout = (sem_t *) GetMem(shms.scout, sizeof(sem_t));
 
     sem_wait(llenos);
     sem_wait(mutex);
 
-    int *out = (int *) 
+    int *out = (int *)
       GetMem(shms.outInternos + (sizeof(int)*tray), sizeof(int));
-    examen *e = (examen *) 
-      GetMem(shms.buffsInternos + (sizeof(examen)*shms.q*tray) 
+    examen *e = (examen *)
+      GetMem(shms.buffsInternos + (sizeof(examen)*shms.q*tray)
        + (sizeof(examen) * *out), sizeof(examen));
 
     element = *e;
@@ -431,24 +431,24 @@ void EvalThread(int tray){
 
     //TODO: proces exam
 
-    vacios = (sem_t*) 
+    vacios = (sem_t*)
       GetMem(shms.vaciosSalida, sizeof(sem_t));
     mutex = (sem_t *)
       GetMem(shms.mutexSalida, sizeof(sem_t));
-    llenos = (sem_t *) 
+    llenos = (sem_t *)
       GetMem(shms.llenosSalida, sizeof(sem_t));
-    
+
     sem_wait(vacios);
     sem_wait(mutex);
 
-    int *in = (int *) 
+    int *in = (int *)
       GetMem(shms.inSalida, sizeof(int));
-    e = (examen *) 
+    e = (examen *)
       GetMem(shms.buffsSalida + (sizeof(examen) * *in), sizeof(examen));
-    
-    *e = element; 
+
+    *e = element;
     *in = (*in + 1) % shms.oe;
-    
+
     sem_post(mutex);
     sem_post(llenos);
 
@@ -491,8 +491,8 @@ void Initialize(int argc, string argv[]){
     thread cur (EnqueueThread, i);
     cur.detach();
   }
-    
-    
+
+
   // hilos analizadores
   for(int i = 0; i<3; i++){
     thread cur (EvalThread, i);
@@ -506,19 +506,175 @@ void Initialize(int argc, string argv[]){
   return;
 }
 
+string TypeExam(int type) {
+  string tipo = "";
+  switch (type) {
+    case 0:
+      tipo = "B";
+      break;
+    case 1:
+      tipo = "S";
+      break;
+    case 2:
+      tipo = "D";
+      break;
+  }
+  return tipo;
+}
+
+void WaitingList() {
+  memS shms = GetMemS();
+  examen element;
+  cout << "Waiting:" << endl;
+
+  for(int i = 0; i < 3; ++i) {
+    sem_t *vacios = (sem_t*)
+      GetMem(shms.vaciosInternos + (sizeof(sem_t)*i), sizeof(sem_t));
+    sem_t *mutex = (sem_t *)
+      GetMem(shms.mutexInternos + (sizeof(sem_t)*i), sizeof(sem_t));
+    sem_t *llenos = (sem_t *)
+      GetMem(shms.llenosInternos + (sizeof(sem_t)*i), sizeof(sem_t));
+
+    sem_wait(mutex);
+
+    int *in = (int *) GetMem(shms.inInternos + (sizeof(int)*i), sizeof(int));
+    int *out = (int *)
+      GetMem(shms.outInternos + (sizeof(int)*i), sizeof(int));
+
+    int valueLlenos;
+    sem_getvalue(llenos, &valueLlenos);
+    if(*in == *out){
+      if(valueLlenos == 0);
+      else {
+        int j = *out;
+        int k = 0;
+        while(k < shms.q) {
+          examen *e = (examen *)
+          GetMem(shms.buffsInternos + (sizeof(examen)*shms.q*i)
+            + (sizeof(examen) * j), sizeof(examen));
+          element = *e;
+          cout << element.id << " " << i << " " << TypeExam(element.tipo) << " "
+            << element.quantity << endl;
+          j = (j + 1)% shms.q;
+          k++;
+        }
+      }
+    }
+
+    if(*in > *out) {
+      for(int j = *out; j < *in; ++j) {
+        examen *e = (examen *)
+        GetMem(shms.buffsInternos + (sizeof(examen)*shms.q*i)
+         + (sizeof(examen) * j), sizeof(examen));
+        element = *e;
+        cout << element.id << " " << i << " " << TypeExam(element.tipo) << " "
+          << element.quantity << endl;
+      }
+    }
+
+    if(*out > *in) {
+      int j = *out;
+      while(j != *in) {
+        examen *e = (examen *)
+        GetMem(shms.buffsInternos + (sizeof(examen)*shms.q*i)
+         + (sizeof(examen) * j), sizeof(examen));
+        element = *e;
+        cout << element.id << " " << i << " " << TypeExam(element.tipo) << " "
+          << element.quantity << endl;
+        j = (j + 1)% shms.q;
+      }
+    }
+    sem_post(mutex);
+  }
+}
+
+void ReportedList() {
+  memS shms = GetMemS();
+  examen element;
+  cout << "Reported:" << endl;
+
+  sem_t *vacios = (sem_t*)
+    GetMem(shms.vaciosSalida, sizeof(sem_t));
+  sem_t *mutex = (sem_t *)
+    GetMem(shms.mutexSalida, sizeof(sem_t));
+  sem_t *llenos = (sem_t *)
+    GetMem(shms.llenosSalida, sizeof(sem_t));
+
+    sem_wait(mutex);
+
+    int *in = (int *) GetMem(shms.inSalida, sizeof(int));
+    int *out = (int *) GetMem(shms.outSalida, sizeof(int));
+
+    int valueLlenos;
+    sem_getvalue(llenos, &valueLlenos);
+    if(*in == *out){
+      if(valueLlenos == 0);
+      else {
+        int j = *out;
+        int k = 0;
+        while(k < shms.oe) {
+          examen *e = (examen *)
+          GetMem(shms.buffsSalida + (sizeof(examen) * j), sizeof(examen));
+          element = *e;
+          cout << element.id << " " << "i" << " " << TypeExam(element.tipo) << " "
+            << element.resultado << endl;
+          j = (j + 1)% shms.oe;
+          k++;
+        }
+      }
+    }
+
+    if(*in > *out) {
+      for(int j = *out; j < *in; ++j) {
+        examen *e = (examen *)
+        GetMem(shms.buffsSalida + (sizeof(examen) * j), sizeof(examen));
+        element = *e;
+        cout << element.id << " " << "i" << " " << TypeExam(element.tipo) << " "
+          << element.resultado << endl;
+      }
+    }
+
+    if(*out > *in) {
+      int j = *out;
+      while(j != *in) {
+        examen *e = (examen *)
+        GetMem(shms.buffsSalida + (sizeof(examen) * j), sizeof(examen));
+        element = *e;
+        cout << element.id << " " << "i" << " " << TypeExam(element.tipo) << " "
+          << element.resultado << endl;
+        j = (j + 1)% shms.oe;
+      }
+    }
+    sem_post(mutex);
+}
+
+void ReactiveList() {
+  memS shms = GetMemS();
+  cout << "Reactives:" << endl;
+  cout << "B " << shms.b << endl;
+  cout << "S " << shms.s << endl;
+  cout << "D " << shms.d << endl;
+}
+
 void MapArgControl(string mode){
   if(mode == "list"){
-    cout << "List of all system: " << mode << endl;
+    cout << "Processing: " << endl;
+    WaitingList();
+    ReportedList();
+    ReactiveList();
   } else if(mode == "list waiting"){
-	  cout << "list of waiting elements: " << mode << endl;
+    WaitingList();
   } else if(mode == "list processing"){
     cout << "List of processing elements: " << mode << endl;
   } else if(mode == "list reported"){
-    cout << "List of reported elements: " << mode << endl;
+    ReportedList();
   } else if(mode == "list reactive"){
-    cout << "List of reactive: " << mode << endl;
+    ReactiveList();
   } else if(mode == "list all"){
-    cout << "List of all system: " << mode << endl;
+    cout << "Processing: " << endl;
+    WaitingList();
+    ReportedList();
+    ReactiveList();
   } else if(mode.substr(0,9) == "update B "){
     cout << "Updating B reactives: " << mode.substr(0,9) << "with "
 	 << mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
@@ -544,7 +700,7 @@ void SubControl() {
 
 int GenSampleId(){
   int id;
-  
+
   sem_t *mutex = (sem_t *) GetMem(0, sizeof(sem_t));
   sem_wait(mutex);
 
@@ -553,7 +709,7 @@ int GenSampleId(){
   mem->examId++;
 
   sem_post(mutex);
-  
+
   return id;
 }
 
@@ -561,7 +717,7 @@ void ProcesInput(istream& fs, ostream& out = cout){
   int tray, quantity;
   char type;
   string line;
-  
+
   //proces multiple input lines
   while(getline(fs, line)){
     stringstream *ss = new stringstream(line);
@@ -586,32 +742,32 @@ void ProcesInput(istream& fs, ostream& out = cout){
       int maxTray = GetMemS().i;
       if(tray >= maxTray) skip = true;
       if(quantity > 5) skip = true;
-      
+
       if(!skip){
       	//cout<<"tray: "<<tray<<" type: "<<type<<" quantity: "<<quantity<<endl;
       	int id = GenSampleId();
-	
+
       	examen *ex = new examen(id, tipo, quantity);
-      	
+
       	memS shms = GetMemS();
-      	sem_t *vacios = (sem_t*) 
+      	sem_t *vacios = (sem_t*)
       	  GetMem(shms.vaciosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
       	sem_t *mutex = (sem_t *)
       	  GetMem(shms.mutexEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
-      	sem_t *llenos = (sem_t *) 
+      	sem_t *llenos = (sem_t *)
       	  GetMem(shms.llenosEntrada + (sizeof(sem_t)*tray), sizeof(sem_t));
-	
+
       	sem_wait(vacios);
       	sem_wait(mutex);
 
       	// ingresar elemento
-      	int *in = (int *) 
+      	int *in = (int *)
       	  GetMem(shms.inEntrada + (sizeof(int)*tray), sizeof(int));
-      	examen *e = (examen *) 
-      	  GetMem(shms.buffsEntrada + (sizeof(examen)*shms.ie*tray) 
+      	examen *e = (examen *)
+      	  GetMem(shms.buffsEntrada + (sizeof(examen)*shms.ie*tray)
       		 + (sizeof(examen) * *in), sizeof(examen));
 
-      	*e = *ex; 
+      	*e = *ex;
       	*in = (*in + 1) % shms.ie;
 
       	sem_post(mutex);
@@ -630,18 +786,18 @@ void ProcesInput(istream& fs, ostream& out = cout){
 
 void Register(int argc, string argv[]){
 	cout << "register" <<endl;
-	
+
 	int curArg = 0;
 	if(argc > 2 && argv[curArg] == "-n"){
 	  //TODO: si argv no es string -> error
 	  memName = argv[curArg+1];
-	  curArg += 2; 
+	  curArg += 2;
 	}
 
 	if(argc-curArg == 1 && argv[curArg]=="-"){
 	  //modo interactivo
 	  cout<<"Interactive mode:"<<endl;
-	  ProcesInput(cin); 
+	  ProcesInput(cin);
 	} else {
 	  //leer de archivo
 	  while(argc > curArg){
