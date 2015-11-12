@@ -429,7 +429,50 @@ void EvalThread(int tray){
     cout << "Eval " << tray << ": Id Elemento recibido: " << element.id << endl;
     sem_post(scout);
 
-    //TODO: proces exam
+    //TODO: wait for reactive
+
+    // proces exam
+    int randMin;
+    int randMax;
+    switch(element.tipo){
+    case B:
+      randMin = 1;
+      randMax = 7;
+      break;
+    case D:
+      randMin = 5;
+      randMax = 20;
+      break;
+    case S:
+      randMin = 8;
+      randMax = 25;
+      break;
+    }
+
+    int time = rand() % (randMax-randMin+1) + randMin;
+
+    sem_wait(scout);
+    cout << "Eval " << tray << ": elemento " << element.id;
+    cout << " waiting for " << time << " seconds" << endl;
+    sem_post(scout);
+    
+    sleep(time);
+
+    //Get Result
+    int resultRand = rand() % 100 + 1;
+    if(resultRand <= 50){
+      element.resultado = p;
+    } else if(resultRand <= 50+35) {
+      element.resultado = n;
+    } else {
+      element.resultado = r;
+    }
+
+    sem_wait(scout);
+    cout << "Eval " << tray << ": elemento " << element.id;
+    cout << " DONE  with result " << resultRand << endl;
+    sem_post(scout);
+    
 
     vacios = (sem_t*)
       GetMem(shms.vaciosSalida, sizeof(sem_t));
