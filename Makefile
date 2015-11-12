@@ -21,6 +21,21 @@ BIN=bin
 
 ARGS=-$(COMPILER) -o $(EXECUTABLE) $(SOURCE) -$(LRT) -$(LPTHREAD) -$(VERSION)
 
+PWD = $(shell pwd)/$(BIN)
+
+DIRECTORY = export PATH=$(PWD):$$PATH
+
+EXPORT = $(shell $(DIRECTORY))
+
+FILE=install.sh
+
+EXPORTFILE = $(shell source $(FILE))
+
+#PATH := $(PATH):$(PWD)
+# PATH = $(shell pwd)/bin:$PATH
+#@echo $(PATH)
+#@echo $(shell export PATH=$(PATH))
+
 all: EvalMain copy
 
 EvalMain: $(evaluator)
@@ -31,7 +46,6 @@ copy:
 		then \
 		mkdir $(BIN); \
 	fi;
-
 	@mv $(EXECUTABLE) $(BIN)
 	@echo "DONE"
 	@echo "Para ejecutar: ./$(BIN)/$(EXECUTABLE)"
