@@ -803,6 +803,7 @@ void SubControl() {
 	string arg = "";
 	while (!getline (cin,arg).eof()) {
 	  MapArgControl(arg);
+    cout << "> ";
 	}
 	return;
 }
@@ -890,6 +891,7 @@ void ProcesInput(istream& fs, ostream& out = cout){
     }
     out<<endl;
     delete ss;
+    cout << "> ";
   }
 }
 
@@ -906,6 +908,7 @@ void Register(int argc, string argv[]){
 	if(argc-curArg == 1 && argv[curArg]=="-"){
 	  //modo interactivo
 	  cout<<"Interactive mode:"<<endl;
+    cout << "> ";
 	  ProcesInput(cin);
 	} else {
 	  //leer de archivo
@@ -932,10 +935,12 @@ void Control(int argc, string argv[]){
 	int curArg = 0;
 	if(argc == 0) {
 		cout << "Nombre seccion compartida: " << "Por default" << endl;
-		SubControl();
+    cout << "> ";
+    SubControl();
 	} else if(argc == 2){
 		if(argv[curArg] == "-s"){
 			cout << "Nombre seccion compartida: " << argv[curArg+1] << endl;
+      cout << "> ";
 			SubControl();
 		} else {
 			cout << "Usage: Invalid Argument" << endl;
