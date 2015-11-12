@@ -26,6 +26,8 @@ struct memS{
 
   //refs
   int scout;
+  
+  int refillSignals;
 
   int buffsEntrada;
   int mutexEntrada;
