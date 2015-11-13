@@ -97,6 +97,11 @@ int CalculateMemMaxSize(){
 	size += sizeof(sem_t)*3;
 	size += sizeof(int)*2;//in, out
 
+  int processing = 3;
+	size += sizeof(examen) * processing;
+	size += sizeof(sem_t);
+  size += sizeof(int);
+
   //variables auxiliares
   size += sizeof(sem_t);//scout
 
@@ -308,6 +313,17 @@ void SetInitialValues(){
   //out Entrada
   shmS->outSalida = off;
   InitIntArray(&off, 0, 1);
+
+  //processing
+  //buffer processing
+  shmS->processingExams = off;
+  off += sizeof(examen) * 3;
+  //mutex Exams
+  shmS->mutexExams = off;
+  InitSemArray(&off, 1, 1);
+
+  shmS->countProcessing = off;
+  InitIntArray(&off, 0, 1);
 }
 
 
@@ -455,11 +471,12 @@ void EvalThread(int tray){
     while(element.quantity > react){
       sem_post(mutexShms);
       //TODO: wait for signal of more
-      
+
       sem_wait(mutexShms);
       rmems = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
       react = CheckReactive(element, rmems);
     }
+
     switch(element.tipo){
     case B:
       rmems->b -= element.quantity;
@@ -472,7 +489,7 @@ void EvalThread(int tray){
       break;
     }
     sem_post(mutexShms);
-    
+
     // proces exam
     int randMin;
     int randMax;
@@ -492,6 +509,35 @@ void EvalThread(int tray){
     }
 
     int time = rand() % (randMax-randMin+1) + randMin;
+    element.timeProcessing = time;
+
+    mutex = (sem_t *)
+      GetMem(shms.mutexExams, sizeof(sem_t));
+
+    sem_wait(mutex);
+
+    switch (element.tipo) {
+      case B:
+        e = (examen *)
+          GetMem(shms.processingExams + (sizeof(examen) * 0), sizeof(examen));
+        break;
+      case S:
+        e = (examen *)
+          GetMem(shms.processingExams + (sizeof(examen) * 1), sizeof(examen));
+        break;
+      case D:
+        e = (examen *)
+          GetMem(shms.processingExams + (sizeof(examen) * 2), sizeof(examen));
+        break;
+    }
+
+    int *count = (int *) GetMem(shms.countProcessing, sizeof(int));
+
+    *e = element;
+
+    *count = *count + 1;
+
+    sem_post(mutex);
 
     sem_wait(scout);
     cout << "Eval " << tray << ": elemento " << element.id;
@@ -541,6 +587,37 @@ void EvalThread(int tray){
     cout << "Eval " << tray;
     cout<< ": elemento " << element.id << " ingresado a cola de salida " << endl;
     sem_post(scout);
+
+    //examen ex = new examen(-1, element.tipo, 0, -1);
+    examen ex;
+    ex.id = -1;
+
+    mutex = (sem_t *)
+      GetMem(shms.mutexExams, sizeof(sem_t));
+
+    sem_wait(mutex);
+
+    switch (element.tipo) {
+      case B:
+        e = (examen *)
+          GetMem(shms.processingExams + (sizeof(examen) * 0), sizeof(examen));
+        break;
+      case S:
+        e = (examen *)
+          GetMem(shms.processingExams + (sizeof(examen) * 1), sizeof(examen));
+        break;
+      case D:
+        e = (examen *)
+          GetMem(shms.processingExams + (sizeof(examen) * 2), sizeof(examen));
+        break;
+    }
+
+    *count = *count - 1;
+
+    *e = ex;
+
+    sem_post(mutex);
+
 
   }
 }
@@ -689,6 +766,31 @@ void WaitingList() {
   }
 }
 
+void ProcessingList() {
+  memS shms = GetMemS();
+  examen element;
+  cout << "Processing:" << endl;
+
+  sem_t *mutex = (sem_t *)
+    GetMem(shms.mutexExams, sizeof(sem_t));
+
+  sem_wait(mutex);
+
+  int *count = (int *) GetMem(shms.countProcessing, sizeof(int));
+  //cout << " value for count " << *count << endl;
+
+    for (int i = 0; i < 3; ++i) {
+          examen *e = (examen *)
+          GetMem(shms.processingExams + (sizeof(examen) * i), sizeof(examen));
+          element = *e;
+          if(element.id >= 0 && *count > 0 && element.timeProcessing > 0)
+          cout << element.id << " " << element.queue << " " << TypeExam(element.tipo) << " "
+            << element.timeProcessing << endl;
+    }
+
+    sem_post(mutex);
+}
+
 void ReportedList() {
   memS shms = GetMemS();
   examen element;
@@ -759,7 +861,7 @@ void ReactiveList() {
 
 void MapArgControl(string mode){
   if(mode == "list"){
-    cout << "Processing: " << endl;
+    ProcessingList();
     WaitingList();
     ReportedList();
     ReactiveList();

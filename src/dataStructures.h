@@ -1,6 +1,6 @@
 #pragma once
 
-enum t_examen{B, S, D};
+enum t_examen{B, S, D, I};
 enum t_resultado{p, n, r}; //r = - (Repetir)
 
 struct examen{
@@ -9,6 +9,7 @@ struct examen{
   t_resultado resultado;
   int quantity;
   int queue;
+  int timeProcessing;
   examen() {}
   examen(int id, t_examen tipo, int q, int queueIn);
 };
@@ -47,4 +48,8 @@ struct memS{
   int vaciosSalida;
   int inSalida;
   int outSalida;
+
+  int processingExams;
+  int mutexExams;
+  int countProcessing;
 };
