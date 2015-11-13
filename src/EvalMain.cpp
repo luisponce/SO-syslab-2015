@@ -83,6 +83,7 @@ int CalculateMemMaxSize(){
 	//Memoria "Dinamica"
 	int in_num = initArgs['i'];
 	int in_size = initArgs['I'];
+	size += sizeof(sem_t)*3;//signals de reactivos
 	size += (sizeof(examen)*in_size)*in_num;
 	size += sizeof(sem_t)*in_num*3; //mutex, llenos y vacios
 	size += sizeof(int)*in_num*2; //in, out
@@ -253,6 +254,9 @@ void SetInitialValues(){
   //scout sem para cout
   shmS->scout = off;
   InitSemArray(&off, 1, 1);
+
+  shmS->refillSignals = off;
+  InitSemArray(&off, 0, 3);
 
   //input
   //buffers de entrada
@@ -466,11 +470,16 @@ void EvalThread(int tray){
     sem_t *mutexShms = (sem_t *) GetMem(0, sizeof(sem_t));
     sem_wait(mutexShms);
     memS *rmems = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
+    sem_t *refill = (sem_t*)
+      GetMem(shms.refillSignals + sizeof(sem_t)*tray, sizeof(sem_t));
     int react;
     react = CheckReactive(element, rmems);
     while(element.quantity > react){
       sem_post(mutexShms);
-      //TODO: wait for signal of more
+
+      //wait for signal of more
+
+      sem_wait(refill);
 
       sem_wait(mutexShms);
       rmems = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
