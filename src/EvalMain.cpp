@@ -478,8 +478,19 @@ void EvalThread(int tray){
       sem_post(mutexShms);
 
       //wait for signal of more
+      sem_wait(scout);
+      cout << "Eval " << tray << " waiting for reactive" << endl;
+      sem_post(scout);
 
-      sem_wait(refill);
+      int semValue;
+      do{
+	sem_getvalue(refill, &semValue);
+	sem_wait(refill);
+      } while(semValue > 0);
+
+      sem_wait(scout);
+      cout << "Eval " << tray << " received reactive" << endl;
+      sem_post(scout);
 
       sem_wait(mutexShms);
       rmems = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
@@ -868,6 +879,55 @@ void ReactiveList() {
   cout << "D " << shms.d << endl;
 }
 
+void Update(string inArgs){
+  char cType; int type;
+  int num;
+  stringstream ss;
+  ss.str(inArgs.substr(7));
+  ss >> cType >> num;
+
+  switch(cType){
+  case 'B':
+    type = 0;
+    break;
+  case 'S':
+    type = 1;
+    break;
+  case 'D':
+    type = 2;
+    break;
+  }
+
+  sem_t *mutex = (sem_t*) GetMem(0, sizeof(sem_t));
+  sem_wait(mutex);
+
+  memS *shms = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
+  switch(cType){
+  case 'B':
+    shms->b += num;
+    break;
+  case 'S':
+    shms->s += num;
+    break;
+  case 'D':
+    shms->d += num;
+    break;
+  }
+  //signal for refill
+  //if someone waiting for signal
+  int semVal;
+  sem_t *signal = (sem_t*) GetMem(shms->refillSignals + (sizeof(sem_t)*type), sizeof(sem_t));
+  sem_post(signal);
+  
+  do{
+    sem_post(signal);
+    sem_getvalue(signal, &semVal);
+    //cout<<semVal<<endl;
+  } while(semVal <= 0);
+
+  sem_post(mutex);
+}
+
 void MapArgControl(string mode){
   if(mode == "list"){
     ProcessingList();
@@ -890,12 +950,15 @@ void MapArgControl(string mode){
   } else if(mode.substr(0,9) == "update B "){
     cout << "Updating B reactives: " << mode.substr(0,9) << "with "
 	 << mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
+    Update(mode);
   } else if(mode.substr(0,9) == "update S "){
     cout << "Updating S reactives: " << mode.substr(0,9) << "with "
 	 << mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
+    Update(mode);
   } else if(mode.substr(0,9) == "update D "){
     cout << "Updating D reactives: " << mode.substr(0,9) << "with "
 	 << mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
+    Update(mode);
   } else {
     cout << "Usage: Invalid Argument" << endl;
     return;
