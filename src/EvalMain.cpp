@@ -24,6 +24,7 @@
 #include <ostream>
 #include <sstream>
 #include <thread>
+#include <ctime>
 
 using namespace std;
 
@@ -466,49 +467,6 @@ void EvalThread(int tray){
     cout << "Eval " << tray << ": Id Elemento recibido: " << element.id << endl;
     sem_post(scout);
 
-    //check for reactive
-    sem_t *mutexShms = (sem_t *) GetMem(0, sizeof(sem_t));
-    sem_wait(mutexShms);
-    memS *rmems = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
-    sem_t *refill = (sem_t*)
-      GetMem(shms.refillSignals + sizeof(sem_t)*tray, sizeof(sem_t));
-    int react;
-    react = CheckReactive(element, rmems);
-    while(element.quantity > react){
-      sem_post(mutexShms);
-
-      //wait for signal of more
-      sem_wait(scout);
-      cout << "Eval " << tray << " waiting for reactive" << endl;
-      sem_post(scout);
-
-      int semValue;
-      do{
-	sem_getvalue(refill, &semValue);
-	sem_wait(refill);
-      } while(semValue > 0);
-
-      sem_wait(scout);
-      cout << "Eval " << tray << " received reactive" << endl;
-      sem_post(scout);
-
-      sem_wait(mutexShms);
-      rmems = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
-      react = CheckReactive(element, rmems);
-    }
-
-    switch(element.tipo){
-    case B:
-      rmems->b -= element.quantity;
-      break;
-    case S:
-      rmems->s -= element.quantity;
-      break;
-    case D:
-      rmems->d -= element.quantity;
-      break;
-    }
-    sem_post(mutexShms);
 
     // proces exam
     int randMin;
@@ -559,6 +517,50 @@ void EvalThread(int tray){
 
     sem_post(mutex);
 
+    //check for reactive
+    sem_t *mutexShms = (sem_t *) GetMem(0, sizeof(sem_t));
+    sem_wait(mutexShms);
+    memS *rmems = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
+    sem_t *refill = (sem_t*)
+      GetMem(shms.refillSignals + sizeof(sem_t)*tray, sizeof(sem_t));
+    int react;
+    react = CheckReactive(element, rmems);
+    while(element.quantity > react){
+      sem_post(mutexShms);
+
+      //wait for signal of more
+      sem_wait(scout);
+      cout << "Eval " << tray << " waiting for reactive" << endl;
+      sem_post(scout);
+
+      int semValue;
+      do{
+	sem_getvalue(refill, &semValue);
+	sem_wait(refill);
+      } while(semValue > 0);
+
+      sem_wait(scout);
+      cout << "Eval " << tray << " received reactive" << endl;
+      sem_post(scout);
+
+      sem_wait(mutexShms);
+      rmems = (memS*) GetMem(sizeof(sem_t), sizeof(memS));
+      react = CheckReactive(element, rmems);
+    }
+
+    switch(element.tipo){
+    case B:
+      rmems->b -= element.quantity;
+      break;
+    case S:
+      rmems->s -= element.quantity;
+      break;
+    case D:
+      rmems->d -= element.quantity;
+      break;
+    }
+
+    sem_post(mutexShms);
     sem_wait(scout);
     cout << "Eval " << tray << ": elemento " << element.id;
     cout << " waiting for " << time << " seconds" << endl;
@@ -1122,11 +1124,82 @@ void Control(int argc, string argv[]){
 	return;
 }
 
+void ReportExam(bool isTryWaiting, timespec tm){
+  examen element;
+
+  memS shms = GetMemS();
+  sem_t *vacios = (sem_t*)
+    GetMem(shms.vaciosSalida, sizeof(sem_t));
+  sem_t *mutex = (sem_t *)
+    GetMem(shms.mutexSalida, sizeof(sem_t));
+  sem_t *llenos = (sem_t *)
+    GetMem(shms.llenosSalida, sizeof(sem_t));
+  sem_t *scout = (sem_t *) GetMem(shms.scout, sizeof(sem_t));
+
+  //trywaiting
+  if(isTryWaiting){
+    if(sem_timedwait(llenos, &tm) != 0){
+      return;
+    }
+  } else {
+    sem_wait(llenos);
+  }
+
+  sem_wait(mutex);
+
+  int *out = (int *)
+    GetMem(shms.outSalida, sizeof(int));
+  examen *e = (examen *)
+    GetMem(shms.buffsSalida + (sizeof(examen)**out), sizeof(examen));
+
+  element = *e;
+  *out = (*out + 1) % shms.oe;
+
+  sem_post(mutex);
+  sem_post(vacios);
+
+  sem_wait(scout);
+  cout << "id: " << element.id << " "; 
+  cout << "resultado: " << ResultExam(element.resultado) << endl;
+  sem_post(scout);
+}
+
+void ReportSecs(int i){
+  time_t result = time(nullptr);
+  localtime(&result);
+  int startTime = result;
+  while(result - startTime <= i){
+    // reportar trywait
+
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) == -1){
+      //error
+    }
+    ts.tv_sec += i - (result - startTime);
+
+    ReportExam(true, ts);
+    
+    result = time(nullptr);
+    localtime(&result);
+  }
+}
+
+void ReportExms(int i){
+  int count = 0;
+  while(count<i){
+    //TODO: reportar wait
+    timespec nl;
+    ReportExam(false, nl);
+
+    count++;
+  }
+}
+
 void MapArgRep(string mode, int value){
 	if(mode == "-i"){
-		cout << "Modo interactivo: " << value << endl;
+	  ReportSecs(value);
 	} else if(mode == "-m"){
-		cout << "Numero determinado examenes: " << value << endl;
+	  ReportExms(value);
 	} else {
 		cout << "Usage: Invalid Argument" << endl;
 		return;
