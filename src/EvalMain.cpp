@@ -644,6 +644,11 @@ void EvalThread(int tray){
   }
 }
 
+bool is_number(const string& s){
+  return !s.empty() 
+    && s.find_first_not_of("0123456789") == std::string::npos;
+}
+
 void Initialize(int argc, string argv[]){
   cout<<"initialize "<<endl;
 
@@ -653,7 +658,7 @@ void Initialize(int argc, string argv[]){
     while(curArg+1 < argc){
       if(argv[curArg] == "-n"){
 	memName = argv[curArg+1];
-      } else {
+      } else if(is_number(argv[curArg+1])) {
 	MapArg(argv[curArg], stoi(argv[curArg+1]));
       }
       curArg += 2;
@@ -1109,6 +1114,7 @@ void Control(int argc, string argv[]){
 		if(argv[curArg] == "-s"){
 			cout << "Nombre seccion compartida: " << argv[curArg+1] << endl;
       cout << "> ";
+      memName = argv[curArg+1];
 			SubControl();
 		} else {
 			cout << "Usage: Invalid Argument" << endl;
@@ -1223,6 +1229,7 @@ void Report(int argc, string argv[]){
 					return;
 				}
 				cout << "Nombre seccion compartida: " << argv[curArg+1] << endl;
+				memName = argv[curArg+1];
 			} else {
 				MapArgRep(argv[curArg], stoi(argv[curArg+1]));
 			}
