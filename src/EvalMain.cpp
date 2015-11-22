@@ -67,10 +67,10 @@ void MapArg(string mode, int value){
     initArgs['d'] = value;
   } else if(mode == "-s"){
     initArgs['s'] = value;
-  } else if(mode == "-ee"){
+  } else if(mode == "-ee" || mode == "-q"){
     initArgs['E'] = value;
   } else {
-    cout << "Usage: Invalid Argument" << endl;
+    cout << "Usage: Mal uso de evaluator init" << endl;
     return;
   }
 
@@ -193,7 +193,7 @@ void PrintArgs(){
   memS mem = GetMemS();
   cout<< "Colas input -i: "<< initArgs['i'] << " - from memS: " << mem.i  << endl;
   cout<< "Capacidad input -ie: "<< initArgs['I'] << " - from memS: " << mem.ie  << endl;
-  cout<< "Capacidad colas internas -ee: "<< initArgs['E'] << " - from memS: " << mem.ee  << endl;
+  cout<< "Capacidad colas internas -q/-ee: "<< initArgs['E'] << " - from memS: " << mem.ee  << endl;
   cout<< "Capacidad output -oe: "<< initArgs['O'] << " - from memS: " << mem.oe  << endl;
   cout<< "Reactivos sangre -b: "<< initArgs['b'] << " - from memS: " << mem.b  << endl;
   cout<< "Reactivos detritos -d: "<< initArgs['d'] << " - from memS: " << mem.d  << endl;
@@ -664,7 +664,7 @@ void Initialize(int argc, string argv[]){
       curArg += 2;
     }
   } else {
-    cout << "Usage: Invalid Argument" << endl;
+    cout << "Usage: Mal uso de evaluator init" << endl;
     return;
   }
   SetDefaultValues();
@@ -722,6 +722,22 @@ string ResultExam(int res) {
       break;
     case 2:
       result = "-";
+      break;
+  }
+  return result;
+}
+
+string ResultExamRep(int res) {
+  string result = "";
+  switch (res) {
+    case 0:
+      result = "p";
+      break;
+    case 1:
+      result = "n";
+      break;
+    case 2:
+      result = "?";
       break;
   }
   return result;
@@ -925,7 +941,7 @@ void Update(string inArgs){
   int semVal;
   sem_t *signal = (sem_t*) GetMem(shms->refillSignals + (sizeof(sem_t)*type), sizeof(sem_t));
   sem_post(signal);
-  
+
   do{
     sem_post(signal);
     sem_getvalue(signal, &semVal);
@@ -944,13 +960,13 @@ void MapArgControl(string mode){
   } else if(mode == "list waiting"){
     WaitingList();
   } else if(mode == "list processing"){
-    cout << "List of processing elements: " << mode << endl;
+    ProcessingList();
   } else if(mode == "list reported"){
     ReportedList();
   } else if(mode == "list reactive"){
     ReactiveList();
   } else if(mode == "list all"){
-    cout << "Processing: " << endl;
+    ProcessingList();
     WaitingList();
     ReportedList();
     ReactiveList();
@@ -967,7 +983,7 @@ void MapArgControl(string mode){
 	 << mode.substr(9)<< endl; //Metodo convertir a numero y lanzar error en caso que no se pueda convertir
     Update(mode);
   } else {
-    cout << "Usage: Invalid Argument" << endl;
+    cout << "Usage: Mal uso de subcomandos list y update" << endl;
     return;
   }
 }
@@ -1064,7 +1080,6 @@ void ProcesInput(istream& fs, ostream& out = cout){
     }
     out<<endl;
     delete ss;
-    cout << "> ";
   }
 }
 
@@ -1081,8 +1096,7 @@ void Register(int argc, string argv[]){
 	if(argc-curArg == 1 && argv[curArg]=="-"){
 	  //modo interactivo
 	  cout<<"Interactive mode:"<<endl;
-    cout << "> ";
-	  ProcesInput(cin);
+    ProcesInput(cin);
 	} else {
 	  //leer de archivo
 	  while(argc > curArg){
@@ -1107,21 +1121,19 @@ void Control(int argc, string argv[]){
 	//mapear argumentos
 	int curArg = 0;
 	if(argc == 0) {
-		cout << "Nombre seccion compartida: " << "Por default" << endl;
-    cout << "> ";
+		cout << "> ";
     SubControl();
 	} else if(argc == 2){
 		if(argv[curArg] == "-s"){
-			cout << "Nombre seccion compartida: " << argv[curArg+1] << endl;
-      cout << "> ";
-      memName = argv[curArg+1];
+		        memName = argv[curArg+1];
+			cout << "> ";
 			SubControl();
 		} else {
-			cout << "Usage: Invalid Argument" << endl;
+			cout << "Usage: Mal uso de evaluator ctrl" << endl;
 			return;
 		}
 	} else {
-		cout << "Usage: Invalid Argument" << endl;
+		cout << "Usage: Mal uso de evaluator ctrl" << endl;
 		return;
 	}
 
@@ -1165,8 +1177,8 @@ void ReportExam(bool isTryWaiting, timespec tm){
   sem_post(vacios);
 
   sem_wait(scout);
-  cout << "id: " << element.id << " "; 
-  cout << "resultado: " << ResultExam(element.resultado) << endl;
+  cout << element.id << " " << element.queue << " " << TypeExam(element.tipo) << " "
+    << ResultExamRep(element.resultado) << endl;
   sem_post(scout);
 }
 
@@ -1184,7 +1196,7 @@ void ReportSecs(int i){
     ts.tv_sec += i - (result - startTime);
 
     ReportExam(true, ts);
-    
+
     result = time(nullptr);
     localtime(&result);
   }
@@ -1207,7 +1219,7 @@ void MapArgRep(string mode, int value){
 	} else if(mode == "-m"){
 	  ReportExms(value);
 	} else {
-		cout << "Usage: Invalid Argument" << endl;
+		cout << "Usage: Mal uso de evaluator rep" << endl;
 		return;
 	}
 }
@@ -1218,17 +1230,16 @@ void Report(int argc, string argv[]){
 	//mapear argumentos
 	int curArg = 0;
 	if(argc == 0) {
-		cout << "Usage: Invalid Argument" << endl;
+		cout << "Usage: Mal uso de evaluator rep" << endl;
 		return;
 	}
 	if((argc % 2) == 0) {
 		while(curArg+1 < argc){
 			if(argv[curArg] == "-s"){
 				if(argc == 2) {
-					cout << "Usage: Invalid Argument" << endl;
+					cout << "Usage: Mal uso de evaluator rep" << endl;
 					return;
 				}
-				cout << "Nombre seccion compartida: " << argv[curArg+1] << endl;
 				memName = argv[curArg+1];
 			} else {
 				MapArgRep(argv[curArg], stoi(argv[curArg+1]));
@@ -1236,7 +1247,7 @@ void Report(int argc, string argv[]){
 			curArg += 2;
 		}
 	} else {
-		cout << "Usage: Invalid Argument" << endl;
+		cout << "Usage: Mal uso de evaluator rep" << endl;
 		return;
 	}
 
