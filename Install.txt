@@ -1,0 +1,11 @@
+Steps to install Evaluator:
+
+1. Run the script called install.sh with the instruction `$ source install.sh` on this directory.
+
+2. Do `$ make` to compile the program
+
+3. (Optional) Add this directory to the path in your .bash_profie file 
+
+4. Use `$ evaluator` to run the program
+
+5. Have Fun :)
