@@ -4,7 +4,7 @@ Steps to install Evaluator:
 
 2. Do `$ make` to compile the program
 
-3. (Optional) Add this directory to the path in your .bash_profie file 
+3. (Optional) Add this directory to the path in your .bash_profile file 
 
 4. Use `$ evaluator` to run the program
 
